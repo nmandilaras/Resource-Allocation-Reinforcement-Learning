@@ -1,0 +1,2 @@
+QLEARNING = '0'
+SARSA = '1'

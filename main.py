@@ -1,38 +1,98 @@
 import gym
 import constants
+import algorithms
 import numpy as np
+import logging.config
 from quantization import Quantization
-from agent import Agent
+from q_agent import QAgent
+from sarsa_agent import SARSAgent
+
+
+def train_loop():  # consider the possible to create a class trainer
+    """"""
+    for i_episode in range(constants.train_episodes):
+        observation = env.reset()  #
+        agent.adjust_exploration(i_episode)
+        agent.adjust_lr(i_episode)
+
+        state = quantizator.digitize(observation)
+        action = agent.choose_action(state)
+
+        # logger.debug(state)
+        # logger.debug(action)
+
+        for step in range(constants.max_steps):
+            env.render()
+            observation, reward, done, info = env.step(action)  # takes the specified action
+            if done:
+                print("Episode {} terminated after {} timesteps".format(i_episode, step + 1))
+                break
+
+            new_state = quantizator.digitize(observation)
+            new_action = agent.choose_action(new_state)
+
+            # logger.debug(new_state)
+            # logger.debug(new_action)
+
+            agent.update(state, action, reward, new_state, new_action)  # if q-learning new action is not going to be used
+
+            state = new_state
+            action = new_action
+        else:
+            print("Episode {} finished successful!".format(i_episode))
+
+
+def eval_loop():
+    for i_episode in range(constants.eval_episodes):
+        observation = env.reset()  #
+
+        state = quantizator.digitize(observation)
+        action = agent.choose_action(state, train=False)
+
+        for step in range(constants.max_steps):
+            env.render()
+            observation, reward, done, info = env.step(action)  # takes the specified action
+            if done:
+                print("Episode {} terminated after {} timesteps".format(i_episode, step + 1))
+                break
+
+            state = quantizator.digitize(observation)
+            action = agent.choose_action(state, train=False)
+        else:
+            print("Episode {} finished successful!".format(i_episode))
+
 
 if __name__ == "__main__":
+    """The problem is considered solved when the poll stays upright for over 195 time steps, 100 times consecutively"""
+
+    logging.config.fileConfig('logging.conf')
+    logger = logging.getLogger('simpleExample')
     env = gym.make(constants.environment)
     high_intervals = env.observation_space.high
     low_intervals = env.observation_space.low
 
-    var_freq = [constants.theta_freq, constants.theta_dot_freq]
-    vars_dict = [(low_intervals[2], high_intervals[2], var_freq[0]), (low_intervals[3], high_intervals[3], var_freq[1])]
-    discriminator = Quantization(vars_dict)
+    logger.debug(high_intervals)
+    logger.debug(low_intervals)
 
-    agent = Agent(env, var_freq)
-    # observation = env.reset()
-    # state = discriminator.digitize(observation[2:])
-    # print(state)
+    vars_ls = list(zip(low_intervals, high_intervals, constants.var_freq))
+    quantizator = Quantization(vars_ls, lambda x: [x[i] for i in [2, 3]])
 
-    for i_episode in range(200):
-        observation = env.reset()
-        state = discriminator.digitize(observation[2:])
-        agent.epsilon /= np.sqrt(i_episode + 1)
-        for t in range(200):
-            env.render()
-            action = agent.choose_action(state)
-            observation, reward, done, info = env.step(action)
-            if done:
-                print("Episode {} finished after {} timesteps".format(i_episode, t + 1))
-                break
-            new_state = discriminator.digitize(observation[2:])
-            agent.update(state, action, new_state, reward)
-            state = new_state
-        else:
-            print("Episode {} finished successful!".format(i_episode))
+    logger.debug(quantizator.vars_bins)
+
+    algorithm = algorithms.QLEARNING
+
+    if algorithm == algorithms.QLEARNING:
+        agent = QAgent(env, quantizator.dimensions)
+    elif algorithm == algorithms.SARSA:
+        agent = SARSAgent(env, quantizator.dimensions)
+    else:
+        raise NotImplementedError
+
+    logger.debug(quantizator.dimensions)
+    logger.debug(agent.q_table.shape)
+
+    train_loop()
+
+    eval_loop()
 
     env.close()
