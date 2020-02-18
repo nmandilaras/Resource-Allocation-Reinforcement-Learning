@@ -6,7 +6,7 @@ import math
 
 
 class Agent:
-    def __init__(self, env, dimensions, lr=0.1, gamma=1, epsilon=1):
+    def __init__(self, env, dimensions, lr=0.1, gamma=0.999, epsilon=1):
         """
 
         :param env:
@@ -16,9 +16,10 @@ class Agent:
         self.env = env
         # q_table has the dimensions of each variable (state) and an extra one for every possible action from each state
         self.q_table = np.zeros(dimensions + [env.action_space.n])
-        self.lr = lr  # usually
+        self.lr = lr
         self.gamma = gamma  # usually 0.8 - 0.99
         self.epsilon = epsilon
+        self.ada_divisor = 25  # np.prod(self.q_table.shape[:-1])
 
     def choose_action(self, cur_state, train=True):
         """"""
@@ -28,10 +29,10 @@ class Agent:
             return np.argmax(self.q_table[cur_state])
 
     def adjust_exploration(self, i_episode):
-        self.epsilon = max(0.1, min(1.0, 1.0 - math.log10((i_episode + 1) / np.prod(self.q_table.shape[:-1]))))  # /= np.sqrt(i_episode + 1)
+        self.epsilon = max(0.1, min(1.0, 1.0 - math.log10((i_episode + 1) / self.ada_divisor)))  #  /= np.sqrt(i_episode + 1)
 
     def adjust_lr(self, i_episode):
-        self.lr = max(0.1, min(1.0, 1.0 - math.log10((i_episode + 1) / np.prod(self.q_table.shape[:-1]))))
+        self.lr = max(0.1, min(1.0, 1.0 - math.log10((i_episode + 1) / self.ada_divisor)))  #  (sum(self.q_table.shape)*2)
 
     # def save_checkpoint(self, filename):
     #     with open(filename, 'wb') as f:

@@ -6,6 +6,7 @@ import logging.config
 from quantization import Quantization
 from q_agent import QAgent
 from sarsa_agent import SARSAgent
+from double_q_agent import DoubleQAgent
 
 
 def train_loop():  # consider the possible to create a class trainer
@@ -21,16 +22,21 @@ def train_loop():  # consider the possible to create a class trainer
         # logger.debug(state)
         # logger.debug(action)
 
-        for step in range(constants.max_steps):
+        for step in range(constants.max_steps):  # consider ending only on fail ?
             env.render()
             observation, reward, done, info = env.step(action)  # takes the specified action
             if done:
+                pos = observation[0]
+                rot = observation[2]
+                if pos < -2.4 or pos > 2.4:
+                    print("Terminated due to position")
                 print("Episode {} terminated after {} timesteps".format(i_episode, step + 1))
                 break
 
             new_state = quantizator.digitize(observation)
             new_action = agent.choose_action(new_state)
 
+            # logger.debug(observation)
             # logger.debug(new_state)
             # logger.debug(new_action)
 
@@ -53,6 +59,10 @@ def eval_loop():
             env.render()
             observation, reward, done, info = env.step(action)  # takes the specified action
             if done:
+                pos = observation[0]
+                rot = observation[2]
+                if pos < -2.4 or pos > 2.4:
+                    print("Terminated due to position")
                 print("Episode {} terminated after {} timesteps".format(i_episode, step + 1))
                 break
 
@@ -75,16 +85,18 @@ if __name__ == "__main__":
     logger.debug(low_intervals)
 
     vars_ls = list(zip(low_intervals, high_intervals, constants.var_freq))
-    quantizator = Quantization(vars_ls, lambda x: [x[i] for i in [2, 3]])
+    quantizator = Quantization(vars_ls, lambda x: [x[i] for i in [0, 1, 2, 3]])
 
     logger.debug(quantizator.vars_bins)
 
-    algorithm = algorithms.QLEARNING
+    algorithm = algorithms.Q_LEARNING
 
-    if algorithm == algorithms.QLEARNING:
+    if algorithm == algorithms.Q_LEARNING:
         agent = QAgent(env, quantizator.dimensions)
     elif algorithm == algorithms.SARSA:
         agent = SARSAgent(env, quantizator.dimensions)
+    elif algorithm == algorithms.DOUBLE_Q_LEARNING:
+        agent = DoubleQAgent(env, quantizator.dimensions)
     else:
         raise NotImplementedError
 
