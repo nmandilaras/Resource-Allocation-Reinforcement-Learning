@@ -1,12 +1,10 @@
 import gym
-import constants
-import algorithms
-import numpy as np
+from utils import constants, algorithms
 import logging.config
-from quantization import Quantization
-from q_agent import QAgent
-from sarsa_agent import SARSAgent
-from double_q_agent import DoubleQAgent
+from utils.quantization import Quantization
+from agents.q_agent import QAgent
+from agents.sarsa_agent import SARSAgent
+from agents.double_q_agent import DoubleQAgent
 
 
 def train_loop():  # consider the possible to create a class trainer
@@ -80,6 +78,7 @@ if __name__ == "__main__":
     env = gym.make(constants.environment)
     high_intervals = env.observation_space.high
     low_intervals = env.observation_space.low
+    num_of_actions = env.action_space.n
 
     logger.debug(high_intervals)
     logger.debug(low_intervals)
@@ -92,11 +91,11 @@ if __name__ == "__main__":
     algorithm = algorithms.Q_LEARNING
 
     if algorithm == algorithms.Q_LEARNING:
-        agent = QAgent(env, quantizator.dimensions)
+        agent = QAgent(num_of_actions, quantizator.dimensions)
     elif algorithm == algorithms.SARSA:
-        agent = SARSAgent(env, quantizator.dimensions)
+        agent = SARSAgent(num_of_actions, quantizator.dimensions)
     elif algorithm == algorithms.DOUBLE_Q_LEARNING:
-        agent = DoubleQAgent(env, quantizator.dimensions)
+        agent = DoubleQAgent(num_of_actions, quantizator.dimensions)
     else:
         raise NotImplementedError
 

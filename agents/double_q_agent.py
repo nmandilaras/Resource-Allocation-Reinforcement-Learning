@@ -1,8 +1,9 @@
+import random
 import numpy as np
-from agent import Agent
+from agents.classic_agent import ClassicAgent
 
 
-class DoubleQAgent(Agent):
+class DoubleQAgent(ClassicAgent):
     """
         Algorithm better suited for stochastic environments
     """
@@ -13,7 +14,7 @@ class DoubleQAgent(Agent):
         self.q_table_b = np.zeros(dimensions + [env.action_space.n])
 
     def update(self, cur_state, action, reward, new_state, new_action):
-        if np.random.random() < .5:  # update q_table_a
+        if random.random() < .5:  # update q_table_a
             upd_table = self.q_table_a
             eval_table = self.q_table_b
         else:   # update q_table_b

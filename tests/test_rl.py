@@ -1,8 +1,7 @@
 import unittest
 import gym
-import constants
-import logging.config
-from quantization import Quantization
+from utils import constants
+from utils.quantization import Quantization
 
 # logging.config.fileConfig('logging.conf')
 # logger = logging.getLogger('simpleExample')
