@@ -5,6 +5,9 @@ from utils.quantization import Quantization
 from agents.q_agent import QAgent
 from agents.sarsa_agent import SARSAgent
 from agents.double_q_agent import DoubleQAgent
+from utils.functions import plot_durations
+from itertools import count
+import matplotlib.pyplot as plt
 
 
 def train_loop():  # consider the possible to create a class trainer
@@ -20,12 +23,14 @@ def train_loop():  # consider the possible to create a class trainer
         # logger.debug(state)
         # logger.debug(action)
 
-        for step in range(constants.max_steps):  # consider ending only on fail ?
-            env.render()
+        for step in count():  # range(constants.max_steps):  # consider ending only on fail ?
+            # env.render()
             observation, reward, done, info = env.step(action)  # takes the specified action
             if done:
                 pos = observation[0]
                 rot = observation[2]
+                episode_durations.append(step + 1)
+                plot_durations(episode_durations, means)
                 if pos < -2.4 or pos > 2.4:
                     print("Terminated due to position")
                 print("Episode {} terminated after {} timesteps".format(i_episode, step + 1))
@@ -54,7 +59,7 @@ def eval_loop():
         action = agent.choose_action(state, train=False)
 
         for step in range(constants.max_steps):
-            env.render()
+            # env.render()
             observation, reward, done, info = env.step(action)  # takes the specified action
             if done:
                 pos = observation[0]
@@ -102,8 +107,13 @@ if __name__ == "__main__":
     logger.debug(quantizator.dimensions)
     logger.debug(agent.q_table.shape)
 
+    episode_durations = []
+    means = []
+
     train_loop()
 
     eval_loop()
 
     env.close()
+
+    plt.show()

@@ -3,7 +3,7 @@ import torch
 from agents.deep_agent import DeepAgent
 
 
-class DoubleDQNAgent(DeepAgent):
+class DDQNAgent(DeepAgent):
     def __init__(self, num_of_actions, network, criterion, optimizer, mem_size=1000, batch_size=32, gamma=0.999, epsilon=1):
         super().__init__(num_of_actions, network, criterion, optimizer, mem_size, batch_size, gamma, epsilon)
         self.target_net = copy.deepcopy(self.policy_net)
@@ -18,7 +18,7 @@ class DoubleDQNAgent(DeepAgent):
         # action_batch operates as index, unsqueezed so that each entry corresponds to one row
 
         # Compute V(s_{t+1}) for all next states.
-        next_state_values = torch.zeros(self.batch_size)
+        next_state_values = torch.zeros(self.batch_size, device=self.device)
         next_state_values[non_final_mask] = self.target_net(non_final_next_state).max(1)[0].detach()
         # Compute the expected Q values
         expected_state_action_values = (next_state_values * self.gamma) + reward_batch

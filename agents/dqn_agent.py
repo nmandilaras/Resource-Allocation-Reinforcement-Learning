@@ -11,7 +11,7 @@ class DQNAgent(DeepAgent):
 
         state_action_values = self.policy_net(state_batch).gather(1, action_batch.unsqueeze(1))
 
-        next_state_values = torch.zeros(self.batch_size)
+        next_state_values = torch.zeros(self.batch_size, device=self.device)
         next_state_values[non_final_mask] = self.policy_net(non_final_next_state).max(1)[0].detach()
 
         expected_state_action_values = (next_state_values * self.gamma) + reward_batch

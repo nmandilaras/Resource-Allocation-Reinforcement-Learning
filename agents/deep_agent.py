@@ -1,7 +1,9 @@
 from abc import ABC, abstractmethod
 
+import math
 import random
 import torch
+from utils.constants import *
 from utils.memory import Memory, Transition
 from agents.agent import Agent
 
@@ -14,15 +16,16 @@ class DeepAgent(Agent, ABC):
 
         """
         super().__init__(num_of_actions, gamma, epsilon)
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.device = 'cpu'  # torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        # print(self.device) seems slower with gpu
         self.memory = Memory(mem_size)
-        self.policy_net = network
+        self.policy_net = network.to(self.device)
         self.criterion = criterion
         self.optimizer = optimizer
         self.batch_size = batch_size
 
     def choose_action(self, state, train=True):
-        state = torch.tensor(state)
+        state = torch.tensor(state, device=self.device)
 
         if random.random() < self.epsilon and train:
             return torch.tensor([[random.randrange(self.num_of_actions)]], dtype=torch.long)
@@ -55,14 +58,14 @@ class DeepAgent(Agent, ABC):
         sample_batch = Transition(*zip(*transitions))
         # Transpose the batch (see http://stackoverflow.com/a/19343/3343043 for detailed explanation).
 
-        state = torch.tensor(sample_batch.state)  # Concatenates the given sequence of seq tensors
-        action = torch.tensor(sample_batch.action)
-        reward = torch.tensor(sample_batch.reward)
-        non_final_next_state = torch.tensor([s for s in sample_batch.next_state if s is not None])
+        state = torch.tensor(sample_batch.state, device=self.device)  # Concatenates the given sequence of seq tensors
+        action = torch.tensor(sample_batch.action, device=self.device)
+        reward = torch.tensor(sample_batch.reward, device=self.device)
+        non_final_next_state = torch.tensor([s for s in sample_batch.next_state if s is not None], device=self.device)
 
         # Compute a mask of non-final states
         non_final_mask = torch.tensor(tuple(map(lambda s: s is not None,
-                                                sample_batch.next_state)), dtype=torch.bool)
+                                                sample_batch.next_state)), dtype=torch.bool, device=self.device)
 
         state_action_values, expected_state_action_values = self.compute_loss(state, action, reward, non_final_next_state, non_final_mask)
         loss = self.criterion(state_action_values, expected_state_action_values)
@@ -74,6 +77,9 @@ class DeepAgent(Agent, ABC):
 
     def push_in_memory(self, state, action, next_state, reward):
         self.memory.push(state, action, next_state, reward)
+
+    def adjust_exploration(self, steps_done):
+        self.epsilon = EPS_END + (EPS_START - EPS_END) * math.exp(-1. * steps_done / EPS_DECAY)
 
     def update_target_net(self):
         raise NotImplementedError

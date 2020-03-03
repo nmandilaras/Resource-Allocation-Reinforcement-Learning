@@ -8,10 +8,10 @@ class DoubleQAgent(ClassicAgent):
         Algorithm better suited for stochastic environments
     """
 
-    def __init__(self, env, dimensions, lr=0.1, gamma=0.999, epsilon=1):
-        super().__init__(env, dimensions, lr, gamma, epsilon)
-        self.q_table_a = np.zeros(dimensions + [env.action_space.n])
-        self.q_table_b = np.zeros(dimensions + [env.action_space.n])
+    def __init__(self, num_of_actions, dimensions, lr=0.1, gamma=0.999, epsilon=1):
+        super().__init__(num_of_actions, dimensions, lr, gamma, epsilon)
+        self.q_table_a = np.zeros(dimensions + [num_of_actions])
+        self.q_table_b = np.zeros(dimensions + [num_of_actions])
 
     def update(self, cur_state, action, reward, new_state, new_action):
         if random.random() < .5:  # update q_table_a
