@@ -6,7 +6,7 @@ import math
 from agents.agent import Agent
 
 
-class ClassicAgent(Agent, ABC):
+class ClassicAgent(Agent, ABC):  # change to TDAgent
     def __init__(self, num_of_actions, dimensions, lr=0.1, gamma=0.999, epsilon=1):
         """
         """
