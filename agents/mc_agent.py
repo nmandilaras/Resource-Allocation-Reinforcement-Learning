@@ -12,6 +12,7 @@ class MCAgent(Agent):
         self.num_of_actions = num_of_actions
         # q_table has the dimensions of each variable (state) and an extra one for every possible action from each state
         self.q_table = np.zeros(dimensions + [num_of_actions])
+        self.num_of_visits = np.zeros(dimensions + [num_of_actions])
 
     def choose_action(self, cur_state, train=True):
         """"""
@@ -24,6 +25,7 @@ class MCAgent(Agent):
         visited_states = set()
         for state, action, value in summary:
             if (state, action) not in visited_states:
-                
+                self.q_table[state + (action,)] = (self.q_table[state + (action,)] * self.num_of_visits[
+                    state + (action,)] + value) / (self.num_of_visits[state + (action,)] + 1)
+                self.num_of_visits[state + (action,)] += 1
                 visited_states.add((state, action))
-        pass
