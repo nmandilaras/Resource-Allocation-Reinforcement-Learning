@@ -1,9 +1,9 @@
 import random
 import numpy as np
-from agents.classic_agent import ClassicAgent
+from agents.td_agent import TDAgent
 
 
-class DoubleQAgent(ClassicAgent):
+class DoubleQAgent(TDAgent):
     """
         Algorithm better suited for stochastic environments
     """

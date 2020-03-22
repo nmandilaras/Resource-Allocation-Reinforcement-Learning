@@ -14,7 +14,7 @@ class Quantization:
         :param vars_ls: An iterable which contains tuple entries (start, stop, num_bins) for each variable
         """
 
-        self.func = func
+        self.func = func  # TODO it seems func is not needed as we can set freq=1 if we want to exclude one dimension
         vars_ls = self.func(vars_ls)
         self.vars_bins = [self.initiate_var(*var) for var in vars_ls]
         self.dimensions = [len(var_bin) - 1 for var_bin in self.vars_bins]  # num of bins for each variable

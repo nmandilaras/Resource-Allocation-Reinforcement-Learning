@@ -8,7 +8,7 @@ theta_dot_freq = 2
 
 var_freq = [x_freq, x_dot_freq, theta_freq, theta_dot_freq]
 
-train_episodes = 1000
+train_episodes = 500
 eval_episodes = 200
 max_steps = 195
 

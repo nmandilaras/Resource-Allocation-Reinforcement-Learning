@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-def plot_durations(episode_durations, means, eval_durations):
+def plot_durations(episode_durations, means=None, eval_durations=None):
     """ For cartpole since reward is 1 for each step we are upright this plot represents rewards also"""
     plt.figure(2)
     plt.clf()

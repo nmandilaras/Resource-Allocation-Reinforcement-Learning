@@ -69,10 +69,10 @@ for i_episode in range(num_episodes):
         if done:
             if train:
                 episode_durations[i_episode] = (t + 1)
-                plot_durations(episode_durations, means, eval_durations)
             else:
-                eval_durations[i_episode] = (t+1)
-                plot_durations(episode_durations, means, eval_durations)
+                eval_durations[i_episode] = (t + 1)
+
+            plot_durations(episode_durations, means, eval_durations)
             break
 
     if i_episode % TARGET_UPDATE == 0:  # Update the target network

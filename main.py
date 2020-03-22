@@ -10,76 +10,14 @@ from itertools import count
 import matplotlib.pyplot as plt
 
 
-def train_loop():  # consider the possible to create a class trainer
-    """"""
-    for i_episode in range(constants.train_episodes):
-        observation = env.reset()  #
-        agent.adjust_exploration(i_episode)
-        agent.adjust_lr(i_episode)
-
-        state = quantizator.digitize(observation)
-        action = agent.choose_action(state)
-
-        # logger.debug(state)
-        # logger.debug(action)
-
-        for step in count():  # range(constants.max_steps):  # consider ending only on fail ?
-            # env.render()
-            observation, reward, done, info = env.step(action)  # takes the specified action
-            if done:
-                pos = observation[0]
-                rot = observation[2]
-                episode_durations.append(step + 1)
-                plot_durations(episode_durations, means)
-                if pos < -2.4 or pos > 2.4:
-                    print("Terminated due to position")
-                print("Episode {} terminated after {} timesteps".format(i_episode, step + 1))
-                break
-
-            new_state = quantizator.digitize(observation)
-            new_action = agent.choose_action(new_state)
-
-            # logger.debug(observation)
-            # logger.debug(new_state)
-            # logger.debug(new_action)
-
-            agent.update(state, action, reward, new_state, new_action)  # if q-learning new action is not going to be used
-
-            state = new_state
-            action = new_action
-        else:
-            print("Episode {} finished successful!".format(i_episode))
-
-
-def eval_loop():
-    for i_episode in range(constants.eval_episodes):
-        observation = env.reset()  #
-
-        state = quantizator.digitize(observation)
-        action = agent.choose_action(state, train=False)
-
-        for step in range(constants.max_steps):
-            # env.render()
-            observation, reward, done, info = env.step(action)  # takes the specified action
-            if done:
-                pos = observation[0]
-                rot = observation[2]
-                if pos < -2.4 or pos > 2.4:
-                    print("Terminated due to position")
-                print("Episode {} terminated after {} timesteps".format(i_episode, step + 1))
-                break
-
-            state = quantizator.digitize(observation)
-            action = agent.choose_action(state, train=False)
-        else:
-            print("Episode {} finished successful!".format(i_episode))
-
-
 if __name__ == "__main__":
     """The problem is considered solved when the poll stays upright for over 195 time steps, 100 times consecutively"""
 
     logging.config.fileConfig('logging.conf')
     logger = logging.getLogger('simpleExample')
+
+    EVAL_INTERVAL = 10
+
     env = gym.make(constants.environment)
     high_intervals = env.observation_space.high
     low_intervals = env.observation_space.low
@@ -107,12 +45,49 @@ if __name__ == "__main__":
     logger.debug(quantizator.dimensions)
     logger.debug(agent.q_table.shape)
 
-    episode_durations = []
+    train_durations = {}
+    eval_durations = {}
     means = []
 
-    train_loop()
+    for i_episode in range(constants.train_episodes):
 
-    eval_loop()
+        train = True
+        if (i_episode + 1) % EVAL_INTERVAL == 0:
+            train = False
+
+        observation = env.reset()  #
+        agent.adjust_exploration(i_episode)
+        agent.adjust_lr(i_episode)
+
+        state = quantizator.digitize(observation)
+        action = agent.choose_action(state, train=train)
+
+        for step in count():  # range(constants.max_steps):  # consider ending only on fail ?
+            # env.render()
+            observation, reward, done, info = env.step(action)  # takes the specified action
+            if done:
+                pos = observation[0]
+                rot = observation[2]
+                if train:
+                    train_durations[i_episode] = (step + 1)
+                else:
+                    eval_durations[i_episode] = (step + 1)
+
+                plot_durations(train_durations, means, eval_durations)
+                if pos < -2.4 or pos > 2.4:
+                    print("Terminated due to position")
+                print("Episode {} terminated after {} timesteps".format(i_episode, step + 1))
+                break
+
+            new_state = quantizator.digitize(observation)
+            new_action = agent.choose_action(new_state, train=train)
+
+            agent.update(state, action, reward, new_state, new_action)  # if q-learning new action is not going to be used
+
+            state = new_state
+            action = new_action
+        else:
+            print("Episode {} finished successful!".format(i_episode))
 
     env.close()
 
