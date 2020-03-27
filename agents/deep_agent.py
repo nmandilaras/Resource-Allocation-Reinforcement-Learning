@@ -25,17 +25,16 @@ class DeepAgent(Agent, ABC):
         self.batch_size = batch_size
 
     def choose_action(self, state, train=True):
-        state = torch.tensor(state, device=self.device)
-
         if random.random() < self.epsilon and train:
-            return torch.tensor([[random.randrange(self.num_of_actions)]], dtype=torch.long)
+            return random.randrange(self.num_of_actions)
         else:
             with torch.no_grad():
+                state = torch.tensor(state, device=self.device)
                 # t.max(1) will return largest column value of each row.
                 # second column on max result is index of where max element was
                 # found, so we pick action with the larger expected reward.
                 # we change max(1) to max(0) since we have only one element in this forward pass
-                return self.policy_net(state).max(0)[1].view(1, 1)
+                return self.policy_net(state).max(0)[1].view(1, 1).item()
 
     def save_checkpoint(self, filename):
         pass

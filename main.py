@@ -1,5 +1,6 @@
 import gym
-from utils import constants, algorithms
+from utils import constants
+from utils.constants import RLAlgorithms
 import logging.config
 from utils.quantization import Quantization
 from agents.q_agent import QAgent
@@ -16,8 +17,6 @@ if __name__ == "__main__":
     logging.config.fileConfig('logging.conf')
     logger = logging.getLogger('simpleExample')
 
-    EVAL_INTERVAL = 10
-
     env = gym.make(constants.environment)
     high_intervals = env.observation_space.high
     low_intervals = env.observation_space.low
@@ -31,13 +30,13 @@ if __name__ == "__main__":
 
     logger.debug(quantizator.vars_bins)
 
-    algorithm = algorithms.Q_LEARNING
+    algorithm = RLAlgorithms.Q_LEARNING
 
-    if algorithm == algorithms.Q_LEARNING:
+    if algorithm == RLAlgorithms.Q_LEARNING:
         agent = QAgent(num_of_actions, quantizator.dimensions)
-    elif algorithm == algorithms.SARSA:
+    elif algorithm == RLAlgorithms.SARSA:
         agent = SARSAgent(num_of_actions, quantizator.dimensions)
-    elif algorithm == algorithms.DOUBLE_Q_LEARNING:
+    elif algorithm == RLAlgorithms.DOUBLE_Q_LEARNING:
         agent = DoubleQAgent(num_of_actions, quantizator.dimensions)
     else:
         raise NotImplementedError
@@ -52,7 +51,7 @@ if __name__ == "__main__":
     for i_episode in range(constants.train_episodes):
 
         train = True
-        if (i_episode + 1) % EVAL_INTERVAL == 0:
+        if (i_episode + 1) % constants.EVAL_INTERVAL == 0:
             train = False
 
         observation = env.reset()  #
@@ -73,7 +72,7 @@ if __name__ == "__main__":
                 else:
                     eval_durations[i_episode] = (step + 1)
 
-                plot_durations(train_durations, means, eval_durations)
+                plot_durations(train_durations, eval_durations)
                 if pos < -2.4 or pos > 2.4:
                     print("Terminated due to position")
                 print("Episode {} terminated after {} timesteps".format(i_episode, step + 1))

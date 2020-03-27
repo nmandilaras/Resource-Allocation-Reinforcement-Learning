@@ -1,6 +1,5 @@
 import gym
-import numpy as np
-from utils import constants, algorithms
+from utils import constants
 from itertools import count
 from agents.mc_agent import MCAgent
 import logging.config
@@ -8,30 +7,31 @@ from utils.quantization import Quantization
 from utils.functions import plot_durations
 import matplotlib.pyplot as plt
 
-EVAL_INTERVAL = 10
-
-env = gym.make(constants.environment)
-num_episodes = 300
-train_durations = {}
-eval_durations = {}
 logging.config.fileConfig('logging.conf')
 logger = logging.getLogger('simpleExample')
 
+num_episodes = 300
+
+env = gym.make(constants.environment)
+train_durations = {}
+eval_durations = {}
+
 num_of_actions = env.action_space.n
+
 high_intervals = env.observation_space.high
 low_intervals = env.observation_space.low
-
 logger.debug(high_intervals)
 logger.debug(low_intervals)
 
 vars_ls = list(zip(low_intervals, high_intervals, constants.var_freq))
 quantizator = Quantization(vars_ls, lambda x: [x[i] for i in [0, 1, 2, 3]])
+
 agent = MCAgent(num_of_actions, quantizator.dimensions)
 
 for i_episode in range(num_episodes):
     # Initialize the environment and state
     train = True
-    if (i_episode + 1) % EVAL_INTERVAL == 0:
+    if (i_episode + 1) % constants.EVAL_INTERVAL == 0:
         train = False
 
     observation = env.reset()
@@ -51,7 +51,7 @@ for i_episode in range(num_episodes):
                 train_durations[i_episode] = (t + 1)
             else:
                 eval_durations[i_episode] = (t + 1)
-            plot_durations(train_durations, None, eval_durations)
+            plot_durations(train_durations, eval_durations)
             break
 
         next_state = quantizator.digitize(next_observation)
