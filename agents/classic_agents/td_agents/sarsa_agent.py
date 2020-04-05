@@ -1,4 +1,4 @@
-from agents.td_agent import TDAgent
+from agents.classic_agents.td_agent import TDAgent
 
 
 class SARSAgent(TDAgent):

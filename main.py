@@ -3,9 +3,9 @@ from utils import constants
 from utils.constants import RLAlgorithms
 import logging.config
 from utils.quantization import Quantization
-from agents.q_agent import QAgent
-from agents.sarsa_agent import SARSAgent
-from agents.double_q_agent import DoubleQAgent
+from agents.classic_agents.td_agents.q_agent import QAgent
+from agents.classic_agents.td_agents.sarsa_agent import SARSAgent
+from agents.classic_agents.td_agents.double_q_agent import DoubleQAgent
 from utils.functions import plot_durations
 from itertools import count
 import matplotlib.pyplot as plt
@@ -30,7 +30,7 @@ if __name__ == "__main__":
 
     logger.debug(quantizator.vars_bins)
 
-    algorithm = RLAlgorithms.Q_LEARNING
+    algorithm = RLAlgorithms.DOUBLE_Q_LEARNING
 
     if algorithm == RLAlgorithms.Q_LEARNING:
         agent = QAgent(num_of_actions, quantizator.dimensions)
@@ -48,7 +48,7 @@ if __name__ == "__main__":
     eval_durations = {}
     means = []
 
-    for i_episode in range(constants.train_episodes):
+    for i_episode in range(constants.max_episodes):
 
         train = True
         if (i_episode + 1) % constants.EVAL_INTERVAL == 0:
@@ -75,7 +75,7 @@ if __name__ == "__main__":
                 plot_durations(train_durations, eval_durations)
                 if pos < -2.4 or pos > 2.4:
                     print("Terminated due to position")
-                print("Episode {} terminated after {} timesteps".format(i_episode, step + 1))
+                # print("Episode {} terminated after {} timesteps".format(i_episode, step + 1))
                 break
 
             new_state = quantizator.digitize(observation)
@@ -86,7 +86,8 @@ if __name__ == "__main__":
             state = new_state
             action = new_action
         else:
-            print("Episode {} finished successful!".format(i_episode))
+            pass
+            # print("Episode {} finished successful!".format(i_episode))
 
     env.close()
 

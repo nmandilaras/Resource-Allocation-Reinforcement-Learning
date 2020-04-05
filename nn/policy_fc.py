@@ -3,18 +3,23 @@ import torch.nn as nn
 
 class PolicyFC(nn.Module):
 
-    def __init__(self, observations_dim, hidden_dim, output_dim, actions_dim, dqn_arch):
+    def __init__(self, features_dim, layers_dim, actions_dim, dqn_arch, dropout=0.1):
         super().__init__()
-        # TODO consider refactoring the network arch, make variant the number of connected layers
-        self.input = nn.Sequential(nn.Linear(observations_dim, output_dim),
-                     nn.Dropout(p=0.1),
-                    nn.ReLU())
-        # self.hidden = nn.Linear(hidden_dim, output_dim)
+        layers_in = [features_dim] + layers_dim[:-1]
+        layers_out = layers_dim
+        output_dim = layers_dim[-1]
+        self.layers = nn.Sequential(*[nn.Sequential(nn.Linear(in_feats, out_feats),
+                                                    nn.Dropout(p=dropout),
+                                                    nn.ELU())
+                                      for in_feats, out_feats in zip(layers_in, layers_out)
+                                      ])
+        # self.input = nn.Sequential(nn.Linear(observations_dim, output_dim),
+        #              nn.Dropout(p=dropout),
+        #             nn.ELU())
         self.output = dqn_arch(output_dim, actions_dim)
 
     def forward(self, x):
-        x = self.input(x)
-        # x = F.relu(self.hidden(x))
+        x = self.layers(x)
         x = self.output(x)
 
         return x

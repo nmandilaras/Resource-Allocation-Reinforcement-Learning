@@ -1,6 +1,6 @@
 import random
 import numpy as np
-from agents.td_agent import TDAgent
+from agents.classic_agents.td_agent import TDAgent
 
 
 class DoubleQAgent(TDAgent):

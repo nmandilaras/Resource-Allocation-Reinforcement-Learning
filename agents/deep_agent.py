@@ -1,8 +1,8 @@
 from abc import ABC, abstractmethod
 
-import math
 import random
 import torch
+import math
 from utils.constants import *
 from utils.memory import Memory, Transition
 from agents.agent import Agent
@@ -11,7 +11,7 @@ from agents.agent import Agent
 class DeepAgent(Agent, ABC):
 
     def __init__(self, num_of_actions, network, criterion, optimizer, mem_size=1000, batch_size=32, gamma=0.999,
-                 epsilon=1):
+                 epsilon=0.3):
         """
 
         """
@@ -25,7 +25,7 @@ class DeepAgent(Agent, ABC):
         self.batch_size = batch_size
 
     def choose_action(self, state, train=True):
-        if random.random() < self.epsilon and train:
+        if (random.random() < self.epsilon) and train:
             return random.randrange(self.num_of_actions)
         else:
             with torch.no_grad():
@@ -70,7 +70,7 @@ class DeepAgent(Agent, ABC):
         loss = self.criterion(state_action_values, expected_state_action_values)
         self.optimizer.zero_grad()
         loss.backward()  # computes gradients
-        # for param in policy_net.parameters(): # what is needed for ?
+        # for param in self.policy_net.parameters():  # what is needed for ?
         #     param.grad.data.clamp_(-1, 1)
         self.optimizer.step()  # updates weights
 
@@ -78,7 +78,15 @@ class DeepAgent(Agent, ABC):
         self.memory.push(state, action, next_state, reward)
 
     def adjust_exploration(self, steps_done):
-        self.epsilon = EPS_END + (EPS_START - EPS_END) * math.exp(-1. * steps_done / EPS_DECAY)
+        self.epsilon = EPS_END + (EPS_START - EPS_END) * math.exp(-steps_done * EPS_DECAY)
+        # the update function is used by series of Deep RL
+        # self.epsilon = max(0.7 * 0.9, 0.05) # this function doesn't seem effective
+
+    def train_mode(self):
+        self.policy_net.train()
+
+    def eval_mode(self):
+        self.policy_net.eval()
 
     def update_target_net(self):
         raise NotImplementedError

@@ -28,3 +28,11 @@ class DDQNAgent(DeepAgent):
     def update_target_net(self):
         # We can also use  other techniques for target updating like Polyak Averaging
         self.target_net.load_state_dict(self.policy_net.state_dict())
+
+    def train_mode(self):
+        super(DDQNAgent, self).train_mode()
+        self.target_net.train()
+
+    def eval_mode(self):
+        super(DDQNAgent, self).eval_mode()
+        self.target_net.eval()

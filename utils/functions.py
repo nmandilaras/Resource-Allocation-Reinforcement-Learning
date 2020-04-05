@@ -1,12 +1,26 @@
 import numpy as np
+from utils import constants
 import matplotlib.pyplot as plt
 
 
-def plot_durations(episode_durations, means=None, eval_durations=None):
-    """ For cartpole since reward is 1 for each step we are upright this plot represents rewards also"""
+def plot_epsilon(epsilon):
+    """ """
     plt.figure(2)
     plt.clf()
-    plt.title('Training...')
+    plt.title('Epsilon...')
+    plt.xlabel('Episode')
+    plt.ylabel('Epsilon')
+    plt.plot(range(len(epsilon)),epsilon)
+    plt.pause(0.001)
+
+def plot_durations(episode_durations, eval_durations, completed=False, means=None):
+    """ For cartpole since reward is 1 for each step we are upright this plot represents rewards also"""
+    figure = plt.figure(1)
+    plt.clf()
+    if completed:
+        plt.title('Progress after {} training episodes'.format(len(episode_durations)))
+    else:
+        plt.title('Training...')
     plt.xlabel('Episode')
     plt.ylabel('Duration')
     train_i, train_duration = zip(*episode_durations.items())
@@ -26,3 +40,9 @@ def plot_durations(episode_durations, means=None, eval_durations=None):
     # else:
     #     means.append(0)
     plt.pause(0.001)  # pause a bit so that plots are updated
+
+    return figure
+
+
+def check_termination(eval_durations):
+    return sum(list(eval_durations.values())[-constants.TERM_INTERVAL:]) / constants.TERM_INTERVAL >= 400
