@@ -45,4 +45,4 @@ def plot_durations(episode_durations, eval_durations, completed=False, means=Non
 
 
 def check_termination(eval_durations):
-    return sum(list(eval_durations.values())[-constants.TERM_INTERVAL:]) / constants.TERM_INTERVAL >= 400
+    return sum(list(eval_durations.values())[-constants.TERM_INTERVAL:]) / constants.TERM_INTERVAL >= 195

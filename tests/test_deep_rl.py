@@ -3,27 +3,39 @@ import gym
 from utils import constants
 import numpy as np
 import torch
-from nn.dqn import DQN
+from nn.policy_fc import PolicyFC
 from utils.memory import Memory, Transition
+import torch.optim as optim
+from agents.dqn_agents import DQNAgent, DDQNAgent
 
 BATCH_SIZE = 16
 
 
 class TestRL(unittest.TestCase):
+    lr = 1e-2
+    layers_dim = [6, 6]
+    mem_size = 100
 
     env = gym.make(constants.environment)
-    memory = Memory(100)
-    policy_net = DQN(env.observation_space.shape[0], 24, 12, env.action_space.n)  # .double()
+
+    num_of_observations = env.observation_space.shape[0]
+    num_of_actions = env.action_space.n
+
+    memory = Memory(mem_size)
+    network = PolicyFC(env.observation_space.shape[0], [24, 12], env.action_space.n)
+    criterion = torch.nn.MSELoss()  # torch.nn.SmoothL1Loss()  # Huber loss
+    optimizer = optim.Adam(network.parameters(), lr)
+    agent = DQNAgent(num_of_actions, network, criterion, optimizer, mem_size)
 
     def test_forward(self):
 
         state = np.float32(self.env.reset())
-        state = torch.tensor(state) # .double()  # network is in float so input must be also
+        state = torch.tensor(state)  # .double()  # network is in float so input must be also
 
-        output = self.policy_net(state)
+        output = self.agent.policy_net(state)
 
         print(output)
-        print(output.max(0)[1])
+        print(output.max(0)[1].item())  # result is good the index of max action is selected
 
     def test_forward_batch(self):
         for _ in range(100):
@@ -72,7 +84,7 @@ class TestRL(unittest.TestCase):
         #
         #
         # print(batch_state)
-        output = self.policy_net(batch_state)
+        output = self.network(batch_state)
         self.assertEqual([len(batch_state), self.env.action_space.n], list(output.shape))
         print(output)
         result = output.max(1)

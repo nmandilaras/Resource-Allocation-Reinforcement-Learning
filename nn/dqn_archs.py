@@ -18,18 +18,20 @@ class Dueling(nn.Module):
         super().__init__()
         # TODO consider refactoring the network arch, streams can consist of more layers
         self.value_stream = nn.Sequential(
-            nn.Linear(output_dim, 12),
-            nn.Dropout(p=0.1),
-            nn.ReLU(),
-            nn.Linear(12, 1)
-        )  # nn.Linear(output_dim, 1)
+            # nn.Linear(output_dim, 12),
+            # nn.Dropout(p=0.1),
+            # nn.ReLU(),
+            # nn.Linear(12, 1)
+            nn.Linear(output_dim, 1)
+        )
 
         self.advantage_stream = nn.Sequential(
-            nn.Linear(output_dim, 12),
-            nn.Dropout(p=0.1),
-            nn.ReLU(),
-            nn.Linear(12, actions_dim)
-        )  # nn.Linear(output_dim, actions_dim)
+            # nn.Linear(output_dim, 12),
+            # nn.Dropout(p=0.1),
+            # nn.ReLU(),
+            # nn.Linear(12, actions_dim)
+            nn.Linear(output_dim, actions_dim)
+        )
 
     def forward(self, x):
         values = self.value_stream(x)

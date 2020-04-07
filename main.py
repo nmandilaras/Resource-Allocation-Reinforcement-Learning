@@ -3,9 +3,7 @@ from utils import constants
 from utils.constants import RLAlgorithms
 import logging.config
 from utils.quantization import Quantization
-from agents.classic_agents.td_agents.q_agent import QAgent
-from agents.classic_agents.td_agents.sarsa_agent import SARSAgent
-from agents.classic_agents.td_agents.double_q_agent import DoubleQAgent
+from agents.classic_agents.td_agents import QAgent, DoubleQAgent, SARSAgent
 from utils.functions import plot_durations
 from itertools import count
 import matplotlib.pyplot as plt

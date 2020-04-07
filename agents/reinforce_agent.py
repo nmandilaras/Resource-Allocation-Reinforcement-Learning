@@ -34,6 +34,8 @@ class Reinforce(Agent):
     def update(self, log_probs, discounted_rewards):
         """  """
         policy_loss = []
+        # print(log_probs)
+        # print(discounted_rewards)
         for log_prob, discounted_reward in zip(log_probs, discounted_rewards):
             policy_loss.append(-log_prob * discounted_reward)
 
@@ -41,6 +43,8 @@ class Reinforce(Agent):
         policy_loss = torch.stack(policy_loss).sum()
         policy_loss.backward()
         self.optimizer.step()
+
+        return policy_loss
 
     def calculate_rewards(self, rewards):
         """ We start from the end of each episode and we calculate the discounted rewards. Moreover we standardize
@@ -53,7 +57,7 @@ class Reinforce(Agent):
             discounted_rewards.insert(0, discounted_reward)
         discounted_rewards = torch.tensor(discounted_rewards)
         discounted_rewards = (discounted_rewards - discounted_rewards.mean()) / (discounted_rewards.std() + 1e-9)
-        # the standardization doesn't seems to have a great effect
+        # the standardization doesn't seems to have a great effect, but it is used by all tutorials
 
         return discounted_rewards
 

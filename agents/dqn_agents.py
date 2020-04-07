@@ -1,5 +1,4 @@
-from abc import ABC, abstractmethod
-
+import copy
 import random
 import torch
 import math
@@ -8,7 +7,7 @@ from utils.memory import Memory, Transition
 from agents.agent import Agent
 
 
-class DeepAgent(Agent, ABC):
+class DQNAgent(Agent):
 
     def __init__(self, num_of_actions, network, criterion, optimizer, mem_size=1000, batch_size=32, gamma=0.999,
                  epsilon=0.3):
@@ -20,6 +19,7 @@ class DeepAgent(Agent, ABC):
         # print(self.device) seems slower with gpu
         self.memory = Memory(mem_size)
         self.policy_net = network.to(self.device)
+        self.target_net = self.policy_net
         self.criterion = criterion
         self.optimizer = optimizer
         self.batch_size = batch_size
@@ -34,7 +34,7 @@ class DeepAgent(Agent, ABC):
                 # second column on max result is index of where max element was
                 # found, so we pick action with the larger expected reward.
                 # we change max(1) to max(0) since we have only one element in this forward pass
-                return self.policy_net(state).max(0)[1].view(1, 1).item()
+                return self.policy_net(state).max(0)[1].item()
 
     def save_checkpoint(self, filename):
         pass
@@ -42,16 +42,12 @@ class DeepAgent(Agent, ABC):
     def load_checkpoint(self, filename):
         pass
 
-    @abstractmethod
-    def compute_loss(self, state, action, reward, non_final_next_state, non_final_mask):
-        raise NotImplementedError
-
-    def update(self):
+    def update(self):  # TODO consider
         try:
             transitions = self.memory.sample(self.batch_size)
         except ValueError:
             # print("Memory smaller than batch size")
-            return
+            return False
 
         # creates a tuple that contains all states as state
         sample_batch = Transition(*zip(*transitions))
@@ -66,13 +62,24 @@ class DeepAgent(Agent, ABC):
         non_final_mask = torch.tensor(tuple(map(lambda s: s is not None,
                                                 sample_batch.next_state)), dtype=torch.bool, device=self.device)
 
-        state_action_values, expected_state_action_values = self.compute_loss(state, action, reward, non_final_next_state, non_final_mask)
-        loss = self.criterion(state_action_values, expected_state_action_values)
+        # Compute Q(s_t, a) - the model computes Q(s_t), then we select the columns of actions taken
+        predicted_q_values = self.policy_net(state).gather(1, action.unsqueeze(1))
+        # action_batch operates as index, unsqueezed so that each entry corresponds to one row
+
+        # Compute V(s_{t+1}) for all next states.
+        next_state_values = torch.zeros(self.batch_size, device=self.device)
+        next_state_values[non_final_mask] = self.target_net(non_final_next_state).max(1)[0].detach()
+        # Compute the expected Q values
+        expected_q_values = reward + self.gamma * next_state_values
+        loss = self.criterion(predicted_q_values, expected_q_values)
+
         self.optimizer.zero_grad()
         loss.backward()  # computes gradients
         # for param in self.policy_net.parameters():  # what is needed for ?
         #     param.grad.data.clamp_(-1, 1)
         self.optimizer.step()  # updates weights
+
+        return True
 
     def push_in_memory(self, state, action, next_state, reward):
         self.memory.push(state, action, next_state, reward)
@@ -88,5 +95,14 @@ class DeepAgent(Agent, ABC):
     def eval_mode(self):
         self.policy_net.eval()
 
+
+class DDQNAgent(DQNAgent):
+    def __init__(self, num_of_actions, network, criterion, optimizer, mem_size=1000, batch_size=32, gamma=0.999, epsilon=1):
+        super().__init__(num_of_actions, network, criterion, optimizer, mem_size, batch_size, gamma, epsilon)
+        self.target_net = copy.deepcopy(self.policy_net)
+        self.target_net.load_state_dict(self.policy_net.state_dict())
+        self.target_net.eval()  # gradient updates never happens in target net
+
     def update_target_net(self):
-        raise NotImplementedError
+        # We can also use  other techniques for target updating like Polyak Averaging
+        self.target_net.load_state_dict(self.policy_net.state_dict())

@@ -1,6 +1,6 @@
 from enum import Enum
 
-environment = 'CartPole-v1'
+environment = 'CartPole-v0'
 
 # 2 ή 4, 2, 6, 2
 x_freq = 4
@@ -9,6 +9,8 @@ theta_freq = 6
 theta_dot_freq = 2
 
 var_freq = [x_freq, x_dot_freq, theta_freq, theta_dot_freq]
+
+TENSORBOARD = True
 
 max_episodes = 1000
 max_steps = 195

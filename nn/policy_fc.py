@@ -1,9 +1,10 @@
 import torch.nn as nn
+from nn.dqn_archs import ClassicDQN
 
 
 class PolicyFC(nn.Module):
 
-    def __init__(self, features_dim, layers_dim, actions_dim, dqn_arch, dropout=0.1):
+    def __init__(self, features_dim, layers_dim, actions_dim, dqn_arch=ClassicDQN, dropout=0.1):
         super().__init__()
         layers_in = [features_dim] + layers_dim[:-1]
         layers_out = layers_dim
@@ -13,9 +14,6 @@ class PolicyFC(nn.Module):
                                                     nn.ELU())
                                       for in_feats, out_feats in zip(layers_in, layers_out)
                                       ])
-        # self.input = nn.Sequential(nn.Linear(observations_dim, output_dim),
-        #              nn.Dropout(p=dropout),
-        #             nn.ELU())
         self.output = dqn_arch(output_dim, actions_dim)
 
     def forward(self, x):
