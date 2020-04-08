@@ -11,9 +11,8 @@ class PolicyFC(nn.Module):
         output_dim = layers_dim[-1]
         self.layers = nn.Sequential(*[nn.Sequential(nn.Linear(in_feats, out_feats),
                                                     nn.Dropout(p=dropout),
-                                                    nn.ELU())
-                                      for in_feats, out_feats in zip(layers_in, layers_out)
-                                      ])
+                                                    nn.Tanh())  # nn.ELU()
+                                      for in_feats, out_feats in zip(layers_in, layers_out)])
         self.output = dqn_arch(output_dim, actions_dim)
 
     def forward(self, x):

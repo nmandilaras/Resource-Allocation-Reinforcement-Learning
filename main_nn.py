@@ -3,6 +3,7 @@ import torch.optim as optim
 import gym
 from utils import constants
 from utils.constants import DQNArch
+from utils.memory import Memory
 import matplotlib.pyplot as plt
 import numpy as np
 import logging.config
@@ -11,8 +12,10 @@ from nn.dqn_archs import ClassicDQN, Dueling
 from agents.dqn_agents import DQNAgent, DDQNAgent
 from utils.functions import plot_durations, plot_epsilon, check_termination
 from torch.utils.tensorboard import SummaryWriter
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 TARGET_UPDATE = 10  # target net is updated with the weights of policy net once every 10 episodes
+BATCH_SIZE = 32
 
 logging.config.fileConfig('logging.conf')
 logger = logging.getLogger('simpleExample')
@@ -23,8 +26,7 @@ if constants.TENSORBOARD:
 
 env = gym.make(constants.environment)
 
-arch = DQNArch.CLASSIC  # Classic, Dueling DQN architectures are supported
-# choose architecture
+arch = DQNArch.CLASSIC  # Classic and Dueling DQN architectures are supported
 if arch == DQNArch.CLASSIC:
     dqn_arch = ClassicDQN
 elif arch == DQNArch.DUELING:
@@ -36,34 +38,36 @@ num_of_observations = env.observation_space.shape[0]
 num_of_actions = env.action_space.n
 
 lr = 1e-2
-layers_dim = [6, 6]
-gamma = 0.999
+layers_dim = [24, 48]
+dropout = 0
+gamma = 1
+mem_size = 100_000
 
-network = PolicyFC(num_of_observations, layers_dim, num_of_actions, dqn_arch)
+network = PolicyFC(num_of_observations, layers_dim, num_of_actions, dqn_arch, dropout)
 
 logger.debug("Number of parameters in our model: {}".format(sum(x.numel() for x in network.parameters())))
 
 criterion = torch.nn.MSELoss()  # torch.nn.SmoothL1Loss()  # Huber loss
 optimizer = optim.Adam(network.parameters(), lr)
-mem_size = 1000
+scheduler = ReduceLROnPlateau(optimizer, factor=0.1, patience=10)  # TODO call scheduler from update function
+# ExponentialLR(optimizer, lr_deacy)  # alternative scheduler
+# scheduler will reduce the lr by the specified factor when metric has stopped improving
+memory = Memory(mem_size)  # single transition is used in vanilla update
 
-double = True
-# choose agent
+double = False
 if double:
-    agent = DDQNAgent(num_of_actions, network, criterion, optimizer, mem_size)
+    agent = DDQNAgent(num_of_actions, network, criterion, optimizer, gamma)
 else:
-    agent = DQNAgent(num_of_actions, network, criterion, optimizer, mem_size)
+    agent = DQNAgent(num_of_actions, network, criterion, optimizer, gamma)
 
 steps_done = 0
 train_durations, eval_durations = {}, {}
 epsilon = []
-means = []
 
 
 for i_episode in range(constants.max_episodes):
     # TODO should i start with a full memory ?
     # TODO memory should be episoditic or not ??
-    # TODO plot epsilon per episode
     # Initialize the environment and state
     state = env.reset()
     state = np.float32(state)
@@ -75,29 +79,30 @@ for i_episode in range(constants.max_episodes):
         agent.eval_mode()
 
     t = 0
+    total_loss = 0
     while not done:
         t += 1
         # env.render()
         action = agent.choose_action(state, train=train)
         next_state, reward, done, _ = env.step(action)
         next_state = np.float32(next_state)
-        reward = torch.tensor([reward])
-
-        if done:
-            next_state = None
-
-        agent.push_in_memory(state, action, next_state, reward)  # Store the transition in memory
+        memory.push(state, action, next_state, reward, done)  # Store the transition in memory
         state = next_state
 
         if train:
             steps_done += 1
-            updated = agent.update()  # Perform one step of the optimization (on the policy network)
+            try:
+                transitions = memory.sample(BATCH_SIZE)
+            except:
+                continue
+            total_loss += agent.update(transitions)  # Perform one step of the optimization (on the policy network)
             agent.adjust_exploration(steps_done)  # rate is updated at every step - taken from the tutorial
 
     if train:
         train_durations[i_episode] = (t + 1)
         if constants.TENSORBOARD:
-            writer.add_scalars('Rewards', {'Train': t+1}, i_episode)
+            writer.add_scalars('Overview/Rewards', {'Train': t+1}, i_episode)
+            writer.add_scalar('Overview/Loss', total_loss/t, i_episode)
             writer.add_scalar('Reward/Train', t + 1, i_episode)
             writer.flush()
             for name, param in agent.policy_net.named_parameters():
@@ -108,7 +113,7 @@ for i_episode in range(constants.max_episodes):
     else:
         eval_durations[i_episode] = (t + 1)
         if constants.TENSORBOARD:
-            writer.add_scalars('Rewards', {'Eval': t + 1}, i_episode)
+            writer.add_scalars('Overview/Rewards', {'Eval': t + 1}, i_episode)
             writer.add_scalar('Reward/Eval', t + 1, i_episode)
             writer.flush()
             if check_termination(eval_durations):
@@ -154,4 +159,3 @@ if constants.TENSORBOARD:
     writer.close()
 
 env.close()
-
