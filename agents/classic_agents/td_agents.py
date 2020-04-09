@@ -9,11 +9,11 @@ class QAgent(TDAgent):
         self.q_table[cur_state + (action,)] = (1 - self.lr) * self.q_table[cur_state + (action,)] + self.lr * (
                     reward + self.gamma * np.max(self.q_table[new_state]))
 
+
 class DoubleQAgent(TDAgent):
     """
         Algorithm better suited for stochastic environments
     """
-
     def __init__(self, num_of_actions, dimensions, lr=0.1, gamma=0.999, epsilon=1):
         super().__init__(num_of_actions, dimensions, lr, gamma, epsilon)
         self.q_table_a = np.zeros(dimensions + [num_of_actions])
@@ -36,6 +36,7 @@ class DoubleQAgent(TDAgent):
         # so action is taken based on the average
 
 
+# Double SARSA could be implemented also
 class SARSAgent(TDAgent):
 
     def update(self, cur_state, action, reward, new_state, new_action):

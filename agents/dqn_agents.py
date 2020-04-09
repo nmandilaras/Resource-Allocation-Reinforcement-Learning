@@ -8,14 +8,17 @@ from agents.agent import Agent
 
 class DQNAgent(Agent):
 
-    def __init__(self, num_of_actions, network, criterion, optimizer, gamma=0.999, epsilon=0.3):
+    def __init__(self, num_of_actions, network, criterion, optimizer, scheduler, gamma=0.999, epsilon=1):
         super().__init__(num_of_actions, gamma, epsilon)
         self.device = 'cpu'  # torch.device("cuda" if torch.cuda.is_available() else "cpu")
         # print(self.device) seems slower with gpu
         self.policy_net = network.to(self.device)
-        self.target_net = self.policy_net
+        self.target_net = copy.deepcopy(self.policy_net)  # if True else self.policy_net  # for simple Deep Q Learning
+        self.target_net.load_state_dict(self.policy_net.state_dict())
+        self.target_net.eval()  # gradient updates never happens in target net
         self.criterion = criterion
         self.optimizer = optimizer
+        self.scheduler = scheduler
 
     def choose_action(self, state, train=True):
         if (random.random() < self.epsilon) and train:
@@ -31,7 +34,6 @@ class DQNAgent(Agent):
 
     def update(self, transitions):
         """
-
         :param transitions: a list whose elements are transitions
         """
 
@@ -44,21 +46,30 @@ class DQNAgent(Agent):
         # action_batch operates as index, unsqueezed so that each entry corresponds to one row
 
         # Compute V(s_{t+1}) for all next states.
-        next_state_values = self.target_net(next_state).max(1)[0].detach()
+        next_state_values = self._calc_expected_q(next_state)
         # Compute the expected Q values
         expected_q_values = reward + (1 - done.int()) * self.gamma * next_state_values
         # we want to take into account next states' values only if they are not final states
-        loss = self.criterion(predicted_q_values.squeeze(1), expected_q_values)
+        loss = self.criterion(predicted_q_values.squeeze(1), expected_q_values.detach())
 
         self.optimizer.zero_grad()
         loss.backward()  # computes gradients
-        # for param in self.policy_net.parameters():  # what is needed for ?
-        #     param.grad.data.clamp_(-1, 1)
+        # for param in self.policy_net.parameters():  # it is used by the DQN paper, to improve stability
+        #     # it clips the grads to be between -1 , 1
+        #     param.grad.data.clamp_(-1, 1)           # but the paper applies this to the loss
         self.optimizer.step()  # updates weights
-        # self.scheduler.step()  # dynamicaly change the lr
+        # self.scheduler.step(loss)  # dynamicaly change the lr
+
         return loss
 
-        return
+    def _calc_expected_q(self, next_state):
+        next_state_values = self.target_net(next_state).max(1)[0]
+
+        return next_state_values
+
+    def update_target_net(self):
+        # We can also use  other techniques for target updating like Polyak Averaging
+        self.target_net.load_state_dict(self.policy_net.state_dict())
 
     def adjust_exploration(self, steps_done):
         self.epsilon = EPS_END + (EPS_START - EPS_END) * math.exp(-steps_done * EPS_DECAY)
@@ -78,13 +89,14 @@ class DQNAgent(Agent):
         self.policy_net.eval()
 
 
-class DDQNAgent(DQNAgent):
+class DoubleDQNAgent(DQNAgent):
     def __init__(self, num_of_actions, network, criterion, optimizer, gamma=0.999, epsilon=1):
         super().__init__(num_of_actions, network, criterion, optimizer, gamma, epsilon)
-        self.target_net = copy.deepcopy(self.policy_net)
-        self.target_net.load_state_dict(self.policy_net.state_dict())
-        self.target_net.eval()  # gradient updates never happens in target net
 
-    def update_target_net(self):
-        # We can also use  other techniques for target updating like Polyak Averaging
-        self.target_net.load_state_dict(self.policy_net.state_dict())
+    def _calc_expected_q(self, next_state):
+        """ """
+        policy_actions = self.policy_net(next_state).max(1)[1]
+        next_state_values = self.target_net(next_state).gather(1, policy_actions.unsqueeze(1))
+
+        return next_state_values.squeeze(1)
+
