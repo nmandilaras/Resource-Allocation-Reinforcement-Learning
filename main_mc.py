@@ -3,9 +3,10 @@ from utils import constants
 from agents.classic_agents.mc_agent import MCAgent
 import logging.config
 from utils.quantization import Quantization
-from utils.functions import plot_durations, check_termination
+from utils.functions import plot_rewards, check_termination
 import matplotlib.pyplot as plt
 
+# COMMENT it seems that monte carlo has high variance maybe we should reduce exploration
 logging.config.fileConfig('logging.conf')
 logger = logging.getLogger('simpleExample')
 
@@ -55,11 +56,11 @@ for i_episode in range(constants.max_episodes):
         if check_termination(eval_durations):
             logger.info('Solved after {} episodes.'.format(len(train_durations)))
             break
-    plot_durations(train_durations, eval_durations)
+    plot_rewards(train_durations, eval_durations)
 
 else:
     logger.info("Unable to reach goal in {} training episodes.".format(len(train_durations)))
 
-plot_durations(train_durations, eval_durations, completed=True)
+plot_rewards(train_durations, eval_durations, completed=True)
 env.close()
 plt.show()

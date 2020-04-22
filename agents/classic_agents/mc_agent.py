@@ -33,10 +33,14 @@ class MCAgent(Agent):
 
         visited_states = set()
         for (state, action), value in zip(state_action_ls, rewards):
-            if (tuple(state), action) not in visited_states:
-                self.q_table[state + (action,)] = (self.q_table[state + (action,)] * self.num_of_visits[
-                    state + (action,)] + value) / (self.num_of_visits[state + (action,)] + 1)
-                self.num_of_visits[state + (action,)] += 1
+            if (tuple(state), action) not in visited_states:  # first-visit MC
+                # μ_k += 1/k(x_k - μ_(k-1)), we move our mean to the direction of the error
+                index = state + (action,)
+                self.num_of_visits[index] += 1
+                coef = max(0.1, 1.0 / self.num_of_visits[index])
+                self.q_table[index] += coef * (value - self.q_table[index])
+                # self.q_table[state + (action,)] = (self.q_table[state + (action,)] * (self.num_of_visits[
+                #     state + (action,)] - 1) + value) / self.num_of_visits[state + (action,)]
                 visited_states.add((tuple(state), action))
 
     def calculate_rewards(self, rewards):

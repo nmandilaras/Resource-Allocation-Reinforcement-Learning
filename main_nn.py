@@ -2,7 +2,6 @@ import torch
 import torch.optim as optim
 import gym
 from utils import constants
-from utils.constants import DQNArch
 from utils.memory import Memory
 import matplotlib.pyplot as plt
 import numpy as np
@@ -10,7 +9,7 @@ import logging.config
 from nn.policy_fc import PolicyFC
 from nn.dqn_archs import ClassicDQN, Dueling
 from agents.dqn_agents import DQNAgent, DoubleDQNAgent
-from utils.functions import plot_durations, plot_epsilon, check_termination
+from utils.functions import plot_rewards, plot_epsilon, check_termination
 from torch.utils.tensorboard import SummaryWriter
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 
@@ -58,9 +57,8 @@ else:
     agent = DQNAgent(num_of_actions, network, criterion, optimizer, scheduler, gamma)
 
 steps_done = 0
-train_durations, eval_durations = {}, {}
+train_rewards, eval_rewards = {}, {}
 epsilon = []
-
 
 for i_episode in range(constants.max_episodes):
     # DQN paper starts from a partially
@@ -75,22 +73,25 @@ for i_episode in range(constants.max_episodes):
         train = False
         agent.eval_mode()
 
-    t = 0
+    episode_duration = 0
+    episode_reward = 0
     total_loss = 0
     while not done:
-        t += 1
-        # env.render()
+        episode_duration += 1
+        if not train:
+            env.render()
         action = agent.choose_action(state, train=train)
         next_state, reward, done, _ = env.step(action)
         next_state = np.float32(next_state)
         memory.push(state, action, next_state, reward, done)  # Store the transition in memory
         state = next_state
+        episode_reward += reward
 
         if train:
             steps_done += 1
             try:
                 transitions = memory.sample(BATCH_SIZE)
-            except:
+            except ValueError:
                 continue
             total_loss += agent.update(transitions)  # Perform one step of the optimization (on the policy network)
             agent.adjust_exploration(steps_done)  # rate is updated at every step - taken from the tutorial
@@ -103,11 +104,11 @@ for i_episode in range(constants.max_episodes):
                     writer.flush()
 
     if train:
-        train_durations[i_episode] = (t + 1)
+        train_rewards[i_episode] = episode_reward
         if constants.TENSORBOARD:
-            writer.add_scalars('Overview/Rewards', {'Train': t+1}, i_episode)
-            writer.add_scalar('Overview/Loss', total_loss/t, i_episode)
-            writer.add_scalar('Reward/Train', t + 1, i_episode)
+            writer.add_scalars('Overview/Rewards', {'Train': episode_reward}, i_episode)
+            writer.add_scalar('Overview/Loss', total_loss / episode_duration, i_episode)
+            writer.add_scalar('Reward/Train', episode_reward, i_episode)
             writer.flush()
             for name, param in agent.policy_net.named_parameters():
                 headline, title = name.rsplit(".", 1)
@@ -115,13 +116,13 @@ for i_episode in range(constants.max_episodes):
             writer.flush()
 
     else:
-        eval_durations[i_episode] = (t + 1)
+        eval_rewards[i_episode] = episode_reward
         if constants.TENSORBOARD:
-            writer.add_scalars('Overview/Rewards', {'Eval': t + 1}, i_episode)
-            writer.add_scalar('Reward/Eval', t + 1, i_episode)
+            writer.add_scalars('Overview/Rewards', {'Eval': episode_reward}, i_episode)
+            writer.add_scalar('Reward/Eval', episode_reward, i_episode)
             writer.flush()
-            if check_termination(eval_durations):
-                logger.info('Solved after {} episodes.'.format(len(train_durations)))
+            if check_termination(eval_rewards):
+                logger.info('Solved after {} episodes.'.format(len(train_rewards)))
                 break
 
     # plot_durations(train_durations, eval_durations)
@@ -132,9 +133,9 @@ for i_episode in range(constants.max_episodes):
         writer.flush()
 
 else:
-    logger.info("Unable to reach goal in {} training episodes.".format(len(train_durations)))
+    logger.info("Unable to reach goal in {} training episodes.".format(len(train_rewards)))
 
-figure = plot_durations(train_durations, eval_durations, completed=True)
+figure = plot_rewards(train_rewards, eval_rewards, completed=True)
 # plt.show()
 if constants.TENSORBOARD:
     writer.add_figure('Plot', figure)
@@ -145,7 +146,7 @@ if constants.TENSORBOARD:
     # first dict with hparams, second dict with metrics
     writer.add_hparams({'lr': lr, 'gamma': gamma, 'HL Dims': str(layers_dim), 'Double': double, 'Dueling': dueling,
                         'Target_upd_interval': TARGET_UPDATE, 'Batch Size': BATCH_SIZE},
-                  {'episodes_needed': len(train_durations)})
+                       {'episodes_needed': len(train_rewards)})
     writer.flush()
     writer.close()
 

@@ -5,13 +5,14 @@ import torch.optim as optim
 import numpy as np
 import matplotlib.pyplot as plt
 from utils import constants
-from agents.reinforce_agent import Reinforce
+from agents.a2c_agent import A2C
 from utils.functions import plot_rewards, check_termination
-from nn.policy_fc import PolicyFC
+from nn.actor_critic import ActorCritic
 from torch.utils.tensorboard import SummaryWriter
 
 logging.config.fileConfig('logging.conf')
 logger = logging.getLogger('simpleExample')
+# TODO this implementation use a high variance MC approach, use TD(λ) instead
 
 writer = None
 if constants.TENSORBOARD:
@@ -27,20 +28,22 @@ num_of_observations = env.observation_space.shape[0]
 num_of_actions = env.action_space.n
 train_rewards, eval_durations = {}, {}
 
-lr = 1e-2  # from pytorch tutorial and others
-layers_dim = [6]
-gamma = 0.999
+lr = 3e-2
+layers_dim = [6, 6]
+gamma = 1
+dropout = 0.1
 
-network = PolicyFC(num_of_observations, layers_dim, num_of_actions)
+network = ActorCritic(num_of_observations, layers_dim, num_of_actions, dropout)
 
 logger.debug("Number of parameters in our model: {}".format(sum(x.numel() for x in network.parameters())))
 
+criterion = torch.nn.MSELoss()
 optimizer = optim.Adam(network.parameters(), lr)
 
-agent = Reinforce(env.action_space.n, network, optimizer, gamma)
+agent = A2C(env.action_space.n, network, criterion, optimizer, gamma)
 
 for i_episode in range(constants.max_episodes):
-    log_probs, rewards, max_probs = [], [], []
+    log_probs, state_values, rewards, max_probs = [], [], [], []
 
     next_state = env.reset()
 
@@ -54,13 +57,14 @@ for i_episode in range(constants.max_episodes):
     episode_duration = 0
     while not done:
         episode_duration += 1
-        if not train:
-            env.render()
+        # if not train:
+        #     env.render()
         state = np.float32(next_state)
-        action, log_prob, max_prob = agent.choose_action(state, train=train)  # TODO merge train parameter with model_train
+        action, log_prob, state_value, max_prob = agent.choose_action(state, train=train)  # TODO merge train parameter with model_train
         next_state, reward, done, _ = env.step(action)
 
         log_probs.append(log_prob)  # even if episode is done we keep the reward and log prop, is this a problem?
+        state_values.append(state_value)
         rewards.append(reward)
         max_probs.append(max_prob)  # only needed for monitoring
 
@@ -68,14 +72,14 @@ for i_episode in range(constants.max_episodes):
     if train:
         train_rewards[i_episode] = episode_reward
         discounted_rewards = agent.calculate_rewards(rewards)
-        loss = agent.update(log_probs, discounted_rewards)
+        loss = agent.update(log_probs, state_values, discounted_rewards)
         if constants.TENSORBOARD:
             writer.add_scalars('Overview/Rewards', {'Train': episode_reward}, i_episode)
             writer.add_scalar('Overview/Loss', loss, i_episode)
             writer.add_scalar('Reward/Train', episode_reward, i_episode)
             writer.add_scalar('Probs/Train', sum(max_probs) / len(max_probs), i_episode)
             writer.flush()
-            for name, param in agent.policy_net.named_parameters():
+            for name, param in agent.actor_critic_net.named_parameters():
                 headline, title = name.rsplit(".", 1)
                 writer.add_histogram(headline + '/' + title, param, i_episode)
             writer.flush()
@@ -102,10 +106,10 @@ if constants.TENSORBOARD:
     writer.add_figure('Plot', figure)
 
     state = np.float32(env.reset())
-    writer.add_graph(agent.policy_net, torch.tensor(state, device=agent.device))
+    writer.add_graph(agent.actor_critic_net, torch.tensor(state, device=agent.device))
 
     # first dict with hparams, second dict with metrics
-    writer.add_hparams({'lr': lr, 'gamma': gamma, 'Hidden Layers Dims': str(layers_dim)},
+    writer.add_hparams({'lr': lr, 'gamma': gamma, 'HL Dims': str(layers_dim)},
                        {'episodes_needed': len(train_rewards)})
     writer.flush()
 

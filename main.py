@@ -4,7 +4,7 @@ from utils.constants import RLAlgorithms
 import logging.config
 from utils.quantization import Quantization
 from agents.classic_agents.td_agents import QAgent, DoubleQAgent, SARSAgent
-from utils.functions import plot_durations
+from utils.functions import plot_rewards
 from itertools import count
 import matplotlib.pyplot as plt
 
@@ -70,7 +70,7 @@ if __name__ == "__main__":
                 else:
                     eval_durations[i_episode] = (step + 1)
 
-                plot_durations(train_durations, eval_durations)
+                plot_rewards(train_durations, eval_durations)
                 if pos < -2.4 or pos > 2.4:
                     print("Terminated due to position")
                 # print("Episode {} terminated after {} timesteps".format(i_episode, step + 1))

@@ -8,6 +8,8 @@ from utils.memory import Memory
 import torch.optim as optim
 from agents.dqn_agents import DQNAgent, DoubleDQNAgent
 from nn.dqn_archs import ClassicDQN, Dueling
+import torch.nn.functional as F
+
 
 BATCH_SIZE = 16
 
@@ -43,6 +45,8 @@ class TestRL(unittest.TestCase):
         output = self.agent.policy_net(state)
 
         print(output)
+        print(F.softmax(output, dim=-1))  # or dim=0 as it has only one dim, -1 means the last dimension
+        # if it was a batch we would need dim=1 sp dim=-1 is more safe
         print(output.max(0)[1].item())  # result is good the index of max action is selected
 
     def test_forward_batch(self):
@@ -68,25 +72,14 @@ class TestRL(unittest.TestCase):
         #     print(b.type())
         #     print(b.shape)
 
-        #
-        # *transitions unpacks the list of transitions so we have 16 transitions each with 4 elements
-        # it would be the same if we had 16 lists each with 4 elements instead of 16 tuples
-        # zip creates a list of 4 tuples each with 16 elements
-
-        # for x in zip(*transitions):
-        #     print(type(x[0]))
-        #     ts = torch.tensor(x)
-        #     print(ts)
-        #     print(ts.shape)
-        #     print(x[0])
-        #     break
-
+        # checks if gather works
         predicted_qs = self.network(state)
         print(predicted_qs)
         print(action)
-        result = predicted_qs.gather(1, action)
+        result = predicted_qs.gather(1, action.unsqueeze(1))
         print(result)
         print(result.shape)
+
 
         # policy_actions = self.network(next_state)
         # print(policy_actions)
