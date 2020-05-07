@@ -1,5 +1,5 @@
 import logging.config
-from tic_tac_toe_env import TicTac4
+from archive.tic_tac_toe_env import TicTac4
 
 logging.config.fileConfig('logging.conf')
 logger = logging.getLogger('simpleExample')
