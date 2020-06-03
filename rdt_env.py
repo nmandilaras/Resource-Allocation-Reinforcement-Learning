@@ -26,9 +26,12 @@ class Rdt(gym.Env):
     def step(self, action_be_ways):
         """ At each step the agent specifies the number of ways that  """
         # enforce the decision with PQOS
+        # start the stats record
         sleep(0.5)  # sleep around 500ms in order to observe the environment
+        # stop the recording and collect results
         # use PQOS? to observe the new metrics
         ipc, mpkt, bw = None, None, None  # other metrics? eg misbranched_ration
+        # tail_latency = 
         # calculate reward based on new metrics
         # return next_state-new metrics, reward, done, info
         # should we return done when the first app finishes ? or should we ignore this fact and just restart

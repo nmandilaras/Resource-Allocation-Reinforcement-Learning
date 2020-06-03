@@ -1,0 +1,9 @@
+# In this file we include instructions about the operations needed for this project to run
+
+# to launch tensorboard
+tensorboard --logdir runs
+
+# to update the dependencies in the conda environment, it installs both conda and pip dependencies
+# in previous versions of conda there was a problem that prevented installing pip dependencies
+conda env update --name rl-test --file rl-test.yml
+
