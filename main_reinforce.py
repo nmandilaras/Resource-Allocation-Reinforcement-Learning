@@ -8,13 +8,13 @@ from utils import constants
 from agents.reinforce_agent import Reinforce
 from utils.functions import plot_rewards, check_termination
 from nn.policy_fc import PolicyFC
-from torch.utils.tensorboard import SummaryWriter
 
 logging.config.fileConfig('logging.conf')
 logger = logging.getLogger('simpleExample')
 
 writer = None
 if constants.TENSORBOARD:
+    from torch.utils.tensorboard import SummaryWriter
     writer = SummaryWriter()
 
 env = gym.make(constants.environment)
@@ -54,8 +54,8 @@ for i_episode in range(constants.max_episodes):
     episode_duration = 0
     while not done:
         episode_duration += 1
-        if not train:
-            env.render()
+        # if not train:
+        #     env.render()
         state = np.float32(next_state)
         action, log_prob, max_prob = agent.choose_action(state, train=train)  # TODO merge train parameter with model_train
         next_state, reward, done, _ = env.step(action)

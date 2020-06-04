@@ -199,7 +199,7 @@ class MonitoringCore(Monitoring):
         return groups
 
     def print_data(self):
-        "Prints current values for monitored events."
+        """Prints current values for monitored events."""
 
         print("    CORE    RMID     IPC    MISSES    LLC[KB]    MBL[MB]    MBR[MB]")
 
@@ -301,7 +301,7 @@ def parse_args():
     parser.add_argument('-p', '--pid', action='store_true',
                         help='select PID monitoring')
     parser.add_argument('cores_pids', metavar='CORE/PID', type=int, nargs='+',
-                        help='a core or PID to be monitored')
+                        help='a core or PID to be monitored')  #nargs='+' all command-line args present are gathered into a list
 
     args = parser.parse_args()
     return args

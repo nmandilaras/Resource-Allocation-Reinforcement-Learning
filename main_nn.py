@@ -10,7 +10,6 @@ from nn.policy_fc import PolicyFC
 from nn.dqn_archs import ClassicDQN, Dueling
 from agents.dqn_agents import DQNAgent, DoubleDQNAgent
 from utils.functions import plot_rewards, plot_epsilon, check_termination
-from torch.utils.tensorboard import SummaryWriter
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 TARGET_UPDATE = 100  # target net is updated with the weights of policy net once every 100 updates
@@ -21,6 +20,7 @@ logger = logging.getLogger('simpleExample')
 
 writer = None
 if constants.TENSORBOARD:
+    from torch.utils.tensorboard import SummaryWriter
     writer = SummaryWriter()
 
 env = gym.make(constants.environment)
@@ -81,7 +81,7 @@ for i_episode in range(constants.max_episodes):
         if not train:
             env.render()
         action = agent.choose_action(state, train=train)
-        next_state, reward, done, _ = env.step(action)
+        next_state, reward, done, _ = env.step(action)  # maybe training can run in parallel with sleep
         next_state = np.float32(next_state)
         memory.push(state, action, next_state, reward, done)  # Store the transition in memory
         state = next_state
