@@ -1,0 +1,6 @@
+torch~=1.5.0+cpu
+torchvision~=0.6.0+cpu
+tb-nightly~=2.3.0a20200604
+gym~=0.17.2
+git+https://github.com/intel/intel-cmt-cat.git#egg=pqos&subdirectory=lib/python
+matplotlib~=3.2.1
