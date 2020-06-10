@@ -107,7 +107,7 @@ class PqosHandler:
         self.socket = socket
         self.cos_id_hp = cos_id_hp
         self.cos_id_be = cos_id_be
-        self.group_hp, self.group_be = self.setup_groups()
+        self.group_hp, self.group_be = None, None
 
     def finish(self):
         pass
@@ -249,6 +249,7 @@ class PqosHandlerCore(PqosHandler):
         self.cores_hp = cores_hp
         self.cores_be = cores_be
         self.events = self.get_supported_events()
+        self.group_hp, self.group_hp = self.setup_groups()
 
     def setup_groups(self):
         """
@@ -305,6 +306,7 @@ class PqosHandlerPid(PqosHandler):
         self.pid_hp = pid_hp
         self.pids_be = pids_be
         self.events = self.get_supported_events()
+        self.group_hp, self.group_hp = self.setup_groups()
 
     def setup_groups(self):
         """
