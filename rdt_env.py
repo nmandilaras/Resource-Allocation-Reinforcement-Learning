@@ -72,4 +72,5 @@ class Rdt(gym.Env):
 
     def stop(self):
         self.pqos_handler.stop()
+        self.pqos_handler.reset()
         self.pqos.fini()

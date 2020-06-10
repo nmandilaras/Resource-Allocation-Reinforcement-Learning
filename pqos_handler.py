@@ -144,7 +144,7 @@ class PqosHandler:
         ipc_be, misses_be, llc_be, mbl_be, mbr_be = get_metrics(self.group_be.values)
 
         print("%8s %6.2f %8.1f %10.1f %10.1f %10.1f" % ('lc_critical', ipc_hp, misses_hp, llc_hp, mbl_hp, mbr_hp))
-        print("%8s %6.2f %8.1f %10.1f %10.1f %10.1f" % ('bes', ipc_be, misses_be, llc_be, mbl_be, mbr_be))
+        print("%8s %6.2f %8.1f %10.1f %10.1f %10.1f" % ('best_effort', ipc_be, misses_be, llc_be, mbl_be, mbr_be))
 
         socket_wide_bw = mbl_hp + mbl_be
 
