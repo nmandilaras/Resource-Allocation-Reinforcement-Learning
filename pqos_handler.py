@@ -131,7 +131,7 @@ class PqosHandler:
 
         return events
 
-    def __get_all_cores(self):
+    def get_all_cores(self):
         """
         Returns a list of all available cores
         """
@@ -283,7 +283,7 @@ class PqosHandlerCore(PqosHandler):
 
     def print_association_config(self):
         """"""
-        cores = self.__get_all_cores()
+        cores = self.get_all_cores()
         for core in cores:
             class_id = self.alloc.assoc_get(core)
             print("Core %u => COS%u" % (core, class_id))
