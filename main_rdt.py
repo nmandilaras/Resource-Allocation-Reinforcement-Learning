@@ -1,7 +1,7 @@
 import time
 from rdt_env import Rdt
 
-cores_pid_hp, cores_pids_be = list(range(10)), list(range(10, 20))
+cores_pid_hp, cores_pids_be = list(range(5)), list(range(5, 10))
 
 env = Rdt(10, cores_pid_hp, cores_pids_be)
 
