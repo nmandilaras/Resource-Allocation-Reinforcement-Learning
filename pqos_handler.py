@@ -63,34 +63,9 @@ def get_metrics(group_values):
     misses = group_values.llc_misses
     llc = bytes_to_kb(group_values.llc)
     mbl = bytes_to_mb(group_values.mbm_local_delta)
-    mbr = bytes_to_mb(group_values.values.mbm_remote_delta)
+    mbr = bytes_to_mb(group_values.mbm_remote_delta)
 
     return ipc, misses, llc, mbl, mbr
-
-
-# TODO consider abolishing context manager and create mock class as well
-class PqosContextManager:
-    """
-    Helper class for using PQoS library Python wrapper as a context manager
-    (in with statement).
-    """
-
-    def __init__(self, *args, **kwargs):
-        self.args = args
-        self.kwargs = kwargs
-        self.pqos = Pqos()
-
-    def __enter__(self):
-        """Initializes PQoS library."""
-
-        self.pqos.init(*self.args, **self.kwargs)
-        return self.pqos
-
-    def __exit__(self, *args, **kwargs):
-        """Finalizes PQoS library."""
-
-        self.pqos.fini()
-        return None
 
 
 class PqosHandler:
@@ -166,7 +141,7 @@ class PqosHandler:
         print("    CORE     IPC    MISSES    LLC[KB]    MBL[MB]    MBR[MB]")
 
         ipc_hp, misses_hp, llc_hp, mbl_hp, mbr_hp = get_metrics(self.group_hp.values)
-        ipc_be, misses_be, llc_be, mbl_be, mbr_be = get_metrics(self.group_hp.values)
+        ipc_be, misses_be, llc_be, mbl_be, mbr_be = get_metrics(self.group_be.values)
 
         print("%8s %6.2f %8.1f %10.1f %10.1f %10.1f" % ('lc_critical', ipc_hp, misses_hp, llc_hp, mbl_hp, mbr_hp))
         print("%8s %6.2f %8.1f %10.1f %10.1f %10.1f" % ('bes', ipc_be, misses_be, llc_be, mbl_be, mbr_be))
@@ -249,7 +224,7 @@ class PqosHandlerCore(PqosHandler):
         self.cores_hp = cores_hp
         self.cores_be = cores_be
         self.events = self.get_supported_events()
-        self.group_hp, self.group_hp = self.setup_groups()
+        self.group_hp, self.group_be = self.setup_groups()
 
     def setup_groups(self):
         """
@@ -274,9 +249,9 @@ class PqosHandlerCore(PqosHandler):
         """
 
         try:
-            for core_hp in self.group_hp.cores:
+            for core_hp in self.cores_hp:
                 self.alloc.assoc_set(core_hp, self.cos_id_hp)
-            for core_be in self.group_be.cores:
+            for core_be in self.cores_be:
                 self.alloc.assoc_set(core_be, self.cos_id_be)
         except:
             print("Setting allocation class of service association failed!")
@@ -306,7 +281,7 @@ class PqosHandlerPid(PqosHandler):
         self.pid_hp = pid_hp
         self.pids_be = pids_be
         self.events = self.get_supported_events()
-        self.group_hp, self.group_hp = self.setup_groups()
+        self.group_hp, self.group_be = self.setup_groups()
 
     def setup_groups(self):
         """
@@ -334,6 +309,7 @@ class PqosHandlerPid(PqosHandler):
         """
 
         try:
+            # TODO probably this have to change pid list instead of group_hp
             self.alloc.assoc_set_pid(self.group_hp.group.pids[0], self.cos_id_hp)
             for pid in self.group_be.pids:
                 self.alloc.assoc_set_pid(pid, self.cos_id_be)

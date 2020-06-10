@@ -3,7 +3,8 @@ from time import sleep
 from gym import error, spaces, utils
 from gym.utils import seeding
 from communication import get_latency
-from pqos_handler import PqosContextManager, PqosHandlerCore, PqosHandlerPid
+from pqos import Pqos
+from pqos_handler import PqosHandlerCore, PqosHandlerPid
 from random import randint
 
 
@@ -17,18 +18,15 @@ class Rdt(gym.Env):
         self.num_ways = num_ways
         self.pqos_interface = pqos_interface
         # TODO launch hp and bes
-        with PqosContextManager(pqos_interface):
-            if pqos_interface == 'OS':
-                self.pqos_handler = PqosHandlerPid(cores_pid_hp, cores_pids_be)
-            else:
-                self.pqos_handler = PqosHandlerCore(cores_pid_hp, cores_pids_be)
-            self.pqos_handler.reset()
-            self.pqos_handler.set_association_class()
-            self.pqos_handler.print_association_config()
-
-    # def cleanup(self):
-    #     with PqosContextManager(self.pqos_interface):
-    #         self.pqos_handler.stop()
+        self.pqos = Pqos()
+        self.pqos.init(pqos_interface)
+        if pqos_interface == 'OS':
+            self.pqos_handler = PqosHandlerPid(cores_pid_hp, cores_pids_be)
+        else:
+            self.pqos_handler = PqosHandlerCore(cores_pid_hp, cores_pids_be)
+        self.pqos_handler.reset()
+        self.pqos_handler.set_association_class()
+        self.pqos_handler.print_association_config()
 
     def __reward_func(self, action_be_ways, hp_tail_latency):
         """Reward func """
@@ -43,17 +41,15 @@ class Rdt(gym.Env):
     def step(self, action_be_ways):
         """ At each step the agent specifies the number of ways that """
         # enforce the decision with PQOS
-        with PqosContextManager(self.pqos_interface):
-            self.pqos_handler.set_allocation_class(action_be_ways)
-            self.pqos_handler.print_allocation_config()
+        self.pqos_handler.set_allocation_class(action_be_ways)
+        self.pqos_handler.print_allocation_config()
 
         # start the stats record, the recorder will go to sleep and the it 'll send the results
         tail_latency = randint(0, 20)  # get_latency()  # NOTE this call will block
         sleep(0.5)
 
-        with PqosContextManager(self.pqos_interface):
-            self.pqos_handler.update()
-            misses_be, socket_wide_bw = self.pqos_handler.get_hw_metrics()
+        self.pqos_handler.update()
+        misses_be, socket_wide_bw = self.pqos_handler.get_hw_metrics()
 
         # other metrics? eg misbranched_ratio
         reward = self.__reward_func(action_be_ways, tail_latency)  # based on new metrics
@@ -73,3 +69,7 @@ class Rdt(gym.Env):
 
     def render(self, **kwargs):
         pass
+
+    def stop(self):
+        self.pqos_handler.stop()
+        self.pqos.fini()
