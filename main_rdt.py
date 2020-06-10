@@ -1,8 +1,9 @@
-import gym
 import time
 from rdt_env import Rdt
 
-env = Rdt(10)
+cores_pid_hp, cores_pids_be = list(range(10)), list(range(10, 20))
+
+env = Rdt(10, cores_pid_hp, cores_pids_be)
 
 state = env.reset()
 
