@@ -4,7 +4,11 @@ from pqos.cpuinfo import PqosCpuInfo
 from pqos.monitoring import PqosMon
 from pqos.l3ca import PqosCatL3
 from pqos.allocation import PqosAlloc
+import logging.config
+from random import randint
 
+logging.config.fileConfig('logging.conf')
+log = logging.getLogger('simpleExample')
 
 ways = [0x00001, 0x00003, 0x00007, 0x0000f,
         0x0001f, 0x0003f, 0x0007f, 0x000ff,
@@ -12,7 +16,7 @@ ways = [0x00001, 0x00003, 0x00007, 0x0000f,
         0x01fff, 0x03fff, 0x07fff, 0x0ffff,
         0x1ffff, 0x3ffff, 0x7ffff, 0xfffff]
 
-base = (1 << 20) - 1  # TODO consider auto-generate those by CpuInfo
+base = (1 << 20) - 1  # NOTE consider auto-generate those by CpuInfo
 
 
 def bytes_to_kb(num_bytes):
@@ -58,9 +62,8 @@ def get_event_name(event_type):
 
 
 def get_metrics(group_values):
-
     ipc = group_values.ipc
-    misses = group_values.llc_misses
+    misses = group_values.llc_misses_delta
     llc = bytes_to_kb(group_values.llc)
     mbl = bytes_to_mb(group_values.mbm_local_delta)
     mbr = bytes_to_mb(group_values.mbm_remote_delta)
@@ -124,11 +127,14 @@ class PqosHandler:
 
         return []
 
+    def setup(self):
+        self.group_hp, self.group_be = self.setup_groups()  # NOTE this MUST follow reset of monitoring
+
     def reset(self):
         """Resets monitoring and configures (starts) monitoring groups."""
 
         self.mon.reset()
-        self.__reset_allocation_association()
+        self.reset_allocation_association()
 
     def update(self):
         """Updates values for monitored events."""
@@ -138,13 +144,13 @@ class PqosHandler:
     def get_hw_metrics(self):
         """Prints current values for monitored events."""
 
-        print("    CORE     IPC    MISSES    LLC[KB]    MBL[MB]    MBR[MB]")
+        log.debug("    CORE     IPC    MISSES    LLC[KB]    MBL[MB]    MBR[MB]")
 
         ipc_hp, misses_hp, llc_hp, mbl_hp, mbr_hp = get_metrics(self.group_hp.values)
         ipc_be, misses_be, llc_be, mbl_be, mbr_be = get_metrics(self.group_be.values)
 
-        print("%8s %6.2f %8.1f %10.1f %10.1f %10.1f" % ('lc_critical', ipc_hp, misses_hp, llc_hp, mbl_hp, mbr_hp))
-        print("%8s %6.2f %8.1f %10.1f %10.1f %10.1f" % ('best_effort', ipc_be, misses_be, llc_be, mbl_be, mbr_be))
+        log.debug("%8s %6.2f %8.1f %10.1f %10.1f %10.1f" % ('lc_critical', ipc_hp, misses_hp, llc_hp, mbl_hp, mbr_hp))
+        log.debug("%8s %6.2f %8.1f %10.1f %10.1f %10.1f" % ('best_effort', ipc_be, misses_be, llc_be, mbl_be, mbr_be))
 
         socket_wide_bw = mbl_hp + mbl_be
 
@@ -177,34 +183,37 @@ class PqosHandler:
         try:
             self.l3ca.set(self.socket, [cos_hp, cos_be])
         except:
-            print("Setting up cache allocation class of service failed!")
+            log.warning("Setting up cache allocation class of service failed!")
+            raise
 
     def print_association_config(self):
         pass
 
     def print_allocation_config(self):
-        sockets = self.cpu_info.get_sockets()
+        sockets = [self.socket]  # self.cpu_info.get_sockets()
         for socket in sockets:
             try:
                 coses = self.l3ca.get(socket)
 
-                print("L3CA COS definitions for Socket %u:" % socket)
+                log.debug("L3CA COS definitions for Socket %u:" % socket)
 
                 for cos in coses:
-                    cos_params = (cos.class_id, cos.mask)
-                    print("    L3CA COS%u => MASK 0x%x" % cos_params)
+                    if cos.class_id == self.cos_id_be or cos.class_id == self.cos_id_hp:
+                        cos_params = (cos.class_id, cos.mask)
+                        log.debug("    L3CA COS%u => MASK 0x%x" % cos_params)
             except:
-                print("Error in getting allocation configuration")
+                log.warning("Error in getting allocation configuration")
                 raise
 
-    def __reset_allocation_association(self):
+    def reset_allocation_association(self):
         """ Resets allocation and association configuration. """
 
         try:
             self.alloc.reset('any', 'any', 'any')
-            print("Allocation reset successful")
+            log.debug("Allocation reset successful")
         except:
-            print("Allocation reset failed!")
+            log.warning("Allocation reset failed!")
+            raise
 
 
 class PqosHandlerCore(PqosHandler):
@@ -224,7 +233,6 @@ class PqosHandlerCore(PqosHandler):
         self.cores_hp = cores_hp
         self.cores_be = cores_be
         self.events = self.get_supported_events()
-        self.group_hp, self.group_be = self.setup_groups()
 
     def setup_groups(self):
         """
@@ -254,14 +262,15 @@ class PqosHandlerCore(PqosHandler):
             for core_be in self.cores_be:
                 self.alloc.assoc_set(core_be, self.cos_id_be)
         except:
-            print("Setting allocation class of service association failed!")
+            log.warning("Setting allocation class of service association failed!")
+            raise
 
     def print_association_config(self):
         """"""
-        cores = self.get_all_cores()
+        cores = self.cores_hp + self.cores_be  # or self.get_all_cores()
         for core in cores:
             class_id = self.alloc.assoc_get(core)
-            print("Core %u => COS%u" % (core, class_id))
+            log.debug("Core %u => COS%u" % (core, class_id))
 
 
 class PqosHandlerPid(PqosHandler):
@@ -281,7 +290,6 @@ class PqosHandlerPid(PqosHandler):
         self.pid_hp = pid_hp
         self.pids_be = pids_be
         self.events = self.get_supported_events()
-        self.group_hp, self.group_be = self.setup_groups()
 
     def setup_groups(self):
         """
@@ -301,23 +309,59 @@ class PqosHandlerPid(PqosHandler):
 
     def set_association_class(self):
         """
-        Sets up allocation classes of service on selected CPUs
-
-        Parameters:
-            class_id: class of service ID
-            pids: a list of pids_bes
+        Sets up association classes of service on hp pid as well as in be pids
         """
 
         try:
-            # TODO probably this have to change pid list instead of group_hp
-            self.alloc.assoc_set_pid(self.group_hp.group.pids[0], self.cos_id_hp)
-            for pid in self.group_be.pids:
+            self.alloc.assoc_set_pid(self.pid_hp, self.cos_id_hp)
+            for pid in self.pids_be:
                 self.alloc.assoc_set_pid(pid, self.cos_id_be)
         except:
-            print("Setting allocation class of service association failed!")
+            log.warning("Setting allocation class of service association failed!")
+            raise
 
     def print_association_config(self):
         pids = [self.pid_hp] + self.pids_be
         for pid in pids:
             class_id = self.alloc.assoc_get_pid(pid)
-            print("Pid %u => COS%u" % (pid, class_id))
+            log.debug("Pid %u => COS%u" % (pid, class_id))
+
+
+class PqosHandlerMock(PqosHandler):
+    """"""
+    def __init__(self):
+
+        pass
+
+    def setup(self):
+        pass
+
+    def reset(self):
+        pass
+
+    def update(self):
+        pass
+
+    def get_hw_metrics(self):
+        misses_be = randint(100, 200)
+        socket_wide_bw = randint(10, 20)
+
+        return misses_be, socket_wide_bw
+
+    def stop(self):
+        pass
+
+    def set_association_class(self):
+        pass
+
+    def set_allocation_class(self, ways_be):
+        pass
+
+    def print_association_config(self):
+        pass
+
+    def print_allocation_config(self):
+        pass
+
+    def reset_allocation_association(self):
+        pass
