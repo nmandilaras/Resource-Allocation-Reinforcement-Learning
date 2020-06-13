@@ -14,9 +14,9 @@ def parse_args():
 
     description = 'RL Agent'
     parser = argparse.ArgumentParser(description=description)
-    parser.add_argument('-interface', default='MSR', help='select pqos interface')
-    # parser.add_argument('-p', '--pid', action='store_true', help='select PID monitoring')
-    # parser.add_argument('cores_pids', metavar='CORE/PID', type=int, nargs='+', help='a core or PID to be monitored')
+    parser.add_argument('-i', '--interface', default='MSR', help='select pqos interface')
+    parser.add_argument('-r', '--rps', help='Requests per second that memcached client should generate')
+    parser.add_argument('-p', '--path-mem', help='Path to memcached loader')
     # nargs='+' all command-line args present are gathered into a list
 
     args = parser.parse_args()
@@ -32,7 +32,8 @@ if __name__ == "__main__":
     logging.config.fileConfig('logging.conf')
     log = logging.getLogger('simpleExample')
 
-    env = Rdt(10, cores_pid_hp, cores_pids_be, pqos_interface=args.interface)
+    latency_thr = 10  # q95 in ms, based on cloudsuite's documentation
+    env = Rdt(latency_thr, cores_pid_hp, cores_pids_be, rps=args.rps, pqos_interface=args.interface)
 
     num_of_observations = env.observation_space.shape[0]
     high_intervals = env.observation_space.high

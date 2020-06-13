@@ -7,18 +7,29 @@ from pqos import Pqos
 from pqos_handler import PqosHandlerCore, PqosHandlerPid, PqosHandlerMock
 from random import randint
 import numpy as np
+import subprocess
+
+WARM_UP_PERIOD = 300
+CORES_CLIENT = '10-14'
+CORES_BE = '4-9'
+# TODO take as args the locations of loader and dataset
+CLIENT_CMD = './loader -a ../twitter_dataset/twitter_dataset_30x -s docker_servers.txt -g 0.8 -T 1 -c 200 -w 8 -e -r'
 
 
 class Rdt(gym.Env):
     metadata = {'render.modes': ['human']}
 
-    def __init__(self, latency_thr, cores_pid_hp, cores_pids_be, num_ways=20, pqos_interface='MSR'):
+    def __init__(self, latency_thr, cores_pid_hp, cores_pids_be, rps, num_ways=20, pqos_interface='MSR'):
         """ First of all we have to specify HP, BEs and assign them to different CPUs
             Need also to initialize RDT"""
         self.latency_thr = latency_thr
         self.pqos_interface = pqos_interface
 
-        # TODO launch hp and bes
+        # launch memcached client
+        self.mem_client = subprocess.Popen(['taskset', '-cpu-list', CORES_CLIENT, CLIENT_CMD, str(rps)])
+        sleep(WARM_UP_PERIOD)
+
+        # TODO launch be
         if pqos_interface == 'none':
             self.pqos_handler = PqosHandlerMock()
         else:
@@ -90,3 +101,11 @@ class Rdt(gym.Env):
         self.pqos_handler.reset()
         if self.pqos_interface != 'none':
             self.pqos.fini()
+        # wait a period of time after the collocation and then stop the memcached client
+        sleep(WARM_UP_PERIOD)
+        self.mem_client.terminate()
+        sleep(1)
+        while self.mem_client.poll() is None:
+            print("Unable to shutdown mem client. Retrying...")
+            self.mem_client.terminate()
+
