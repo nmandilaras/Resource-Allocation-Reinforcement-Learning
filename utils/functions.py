@@ -1,7 +1,14 @@
 import numpy as np
 from utils import constants
 import matplotlib.pyplot as plt
+import re
 
+
+def parse_num_list(string):
+    m = re.match(r'(\d+)(?:-(\d+))?$', string)
+    start = m.group(1)
+    end = m.group(2) or start
+    return list(range(int(start), int(end)+1))
 
 def plot_epsilon(epsilon):
     """ """
