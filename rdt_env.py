@@ -205,4 +205,4 @@ class Rdt(gym.Env):
         plt.ylabel('Q95 Latency in ms')
         plt.legend(loc='best')
         plt.savefig('runs/collocation_{}.png'.format(datetime.today().strftime('%Y%m%d_%H%M%S')))
-        plt.show()
+        # plt.show()
