@@ -19,12 +19,18 @@ logging.config.fileConfig('logging.conf')
 log = logging.getLogger('simpleExample')
 latency_list = []
 
+bes = {
+    'in-memory': ('zilutian/in-memory-analytics:amd64', '/data/ml-latest /data/myratings.csv --driver-memory 6g --executor-memory 16g', 'data'),
+    'in-memory-small': ('zilutian/in-memory-analytics:amd64', '/data/ml-latest-small /data/myratings.csv', 'data'),
+    'graphs': ('cloudsuite/graph-analytics', '--driver-memory 6g --executor-memory 16g', 'data-twitter')
+}
+
 
 class Rdt(gym.Env):
     metadata = {'render.modes': ['human']}
 
     def __init__(self, latency_thr, cores_pid_hp, cores_pids_be, cores_client, path_mem, rps, clnt_thrds, wait_interval,
-                 num_ways=20, pqos_interface='MSR'):
+                 be_name, num_ways=20, pqos_interface='MSR'):
         """ First of all we have to specify HP, BEs and assign them to different CPUs
             Need also to initialize RDT"""
         self.latency_thr = latency_thr
@@ -36,6 +42,7 @@ class Rdt(gym.Env):
         self.wait_interval = wait_interval
         self.pqos_interface = pqos_interface
         self.warm_up = WARM_UP_PERIOD * 1000 / int(self.wait_interval)
+        self.be_name = be_name
         cores_pid_hp_range = parse_num_list(cores_pid_hp)
         cores_pids_be_range = parse_num_list(cores_pids_be)
         # log.debug(cores_pid_hp_range)
@@ -81,11 +88,12 @@ class Rdt(gym.Env):
 
     def __start_be(self):
         """ """
+        log.debug("BE {} to be started".format(self.be_name))
         client = docker.from_env()
-        # TODO get as args everything related to the container
-        self.container_be = client.containers.run('zilutian/in-memory-analytics:amd64',
-                                                  command='/data/ml-latest-small /data/myratings.csv', name='be',
-                                                  cpuset_cpus=self.cores_pids_be, volumes_from=['data'], detach=True)
+        container, command, volume = bes[self.be_name]
+        self.container_be = client.containers.run(container,
+                                                  command=command, name='be',
+                                                  cpuset_cpus=self.cores_pids_be, volumes_from=[volume], detach=True)
 
     def __stop_be(self):
         try:
@@ -201,6 +209,7 @@ class Rdt(gym.Env):
         plt.title('Effect of collocation in tail latency')
         plt.axvline(x=self.warm_up, color='g', linestyle='dashed', label='BE starts')
         plt.axvline(x=len(latency_list_per) - self.warm_up, color='r', linestyle='dashed', label='BE stops')
+        plt.axhline(y=self.latency_thr, color='m', label='Latency threshold')
         plt.xlabel('Steps')
         plt.ylabel('Q95 Latency in ms')
         plt.legend(loc='best')
