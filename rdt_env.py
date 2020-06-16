@@ -203,7 +203,7 @@ class Rdt(gym.Env):
         if self.pqos_interface != 'none':
             self.pqos.fini()
 
-        latency_per = np.percentile(latency_list, 90)
+        latency_per = np.percentile(latency_list, 99)
         latency_list_per = [min(i, latency_per) for i in latency_list]
         plt.plot(latency_list_per)
         plt.title('Effect of collocation in tail latency')
