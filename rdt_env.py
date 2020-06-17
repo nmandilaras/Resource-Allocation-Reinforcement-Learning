@@ -15,7 +15,7 @@ from datetime import datetime
 
 WARM_UP_PERIOD = 30
 
-logging.config.fileConfig('logging.conf')
+logging.config.fileConfig('logging.conf')  # TODO maybe we should parameterized its path
 log = logging.getLogger('simpleExample')
 latency_list = []
 
@@ -43,10 +43,11 @@ class Rdt(gym.Env):
         self.pqos_interface = pqos_interface
         self.warm_up = WARM_UP_PERIOD * 1000 / int(self.wait_interval)
         self.be_name = be_name
+        self.container_bes = []
         cores_pid_hp_range = parse_num_list(cores_pid_hp)
-        cores_pids_be_range = parse_num_list(cores_pids_be)
-        # log.debug(cores_pid_hp_range)
-        # log.debug(cores_pids_be_range)
+        self.cores_pids_be_range = parse_num_list(cores_pids_be)
+        log.debug(cores_pid_hp_range)
+        log.debug(self.cores_pids_be_range)
         # log.debug(cores_client)
 
         self.action_space = spaces.Discrete(num_ways)  # TODO maybe will reduce this, only few ways to the be
@@ -65,9 +66,9 @@ class Rdt(gym.Env):
             self.pqos = Pqos()
             self.pqos.init(pqos_interface)
             if pqos_interface == 'OS':
-                self.pqos_handler = PqosHandlerPid(cores_pid_hp_range, cores_pids_be_range)
+                self.pqos_handler = PqosHandlerPid(cores_pid_hp_range, self.cores_pids_be_range)
             else:
-                self.pqos_handler = PqosHandlerCore(cores_pid_hp_range, cores_pids_be_range)
+                self.pqos_handler = PqosHandlerCore(cores_pid_hp_range, self.cores_pids_be_range)
 
     def __start_client(self):
         """  """
@@ -86,22 +87,37 @@ class Rdt(gym.Env):
             log.debug("Unable to shutdown mem client. Retrying...")
             self.mem_client.terminate()
 
-    def __start_be(self):
-        """ """
+    def __start_bes(self):
+        """ Check if bes are already initialized and restarts them otherwise they will be launched"""
         log.debug("BE {} to be started".format(self.be_name))
         client = docker.from_env()
-        container, command, volume = bes[self.be_name]
-        self.container_be = client.containers.run(container,
-                                                  command=command, name='be',
-                                                  cpuset_cpus=self.cores_pids_be, volumes_from=[volume], detach=True)
+        if not self.container_bes:
+            container, command, volume = bes[self.be_name]
+            for i in self.cores_pids_be_range:
+                log.debug("Core for be: {}".format(i))
+                container_be = client.containers.run(container,
+                                                      command=command, name='be_' + str(i),
+                                                      cpuset_cpus=str(i), volumes_from=[volume], detach=True)
+                self.container_bes.append(container_be)
+        else:
+            for container_be in self.container_bes:
+                container_be.restart()
 
-    def __stop_be(self):
-        try:
-            self.container_be.reload()
-            self.container_be.stop()
-            self.container_be.remove()
-        except:
-            pass
+    def __poll_bes(self):
+        status = []
+        for container_be in self.container_bes:
+            container_be.reload()
+            if container_be.status == 'exited':
+                status.append(True)
+            else:
+                status.append(False)
+
+        return status
+
+    def __stop_bes(self):
+        for container_be in self.container_bes:
+            container_be.stop()
+            container_be.remove()
 
     def __get_next_state(self, action_be_ways):
         # poll metrics so the next poll will contains deltas from this point just after the action
@@ -135,7 +151,7 @@ class Rdt(gym.Env):
         self.pqos_handler.set_association_class()
         self.pqos_handler.print_association_config()
 
-        # launch the load tester
+        # (re)launch the load tester
         if self.mem_client is not None:
             self.__stop_client()
         self.__start_client()
@@ -145,11 +161,9 @@ class Rdt(gym.Env):
         for i in range(int(self.warm_up)):
             latency_list.append(get_latency())
 
-        # launch the be container
-        if self.container_be is not None:
-            self.__stop_be()
-        self.__start_be()
-        log.debug('BE started')
+        # (re)launch the be containers
+        self.__start_bes()
+        log.debug('BEs started')
 
         state = self.__get_next_state(self.action_space.n)
 
@@ -158,11 +172,7 @@ class Rdt(gym.Env):
     def step(self, action_be_ways):
         """ At each step the agent specifies the number of ways that are assigned to the be"""
 
-        done = False
-        self.container_be.reload()
-        if self.container_be.status == 'exited':
-            self.container_be.remove()
-            done = True
+        done = all(self.__poll_bes())
 
         err_msg = "%r (%s) invalid" % (action_be_ways, type(action_be_ways))
         assert self.action_space.contains(action_be_ways), err_msg
@@ -187,8 +197,8 @@ class Rdt(gym.Env):
     def stop(self):
         log.debug('Stopping everything!')
 
-        # check if container is running and stop it
-        self.__stop_be()
+        # stop and remove the be containers
+        self.__stop_bes()
 
         # wait a period of time after the collocation in order to collect metrics
         for i in range(int(self.warm_up)):
@@ -207,8 +217,8 @@ class Rdt(gym.Env):
         latency_list_per = [min(i, latency_per) for i in latency_list]
         plt.plot(latency_list_per)
         plt.title('Effect of collocation in tail latency')
-        plt.axvline(x=self.warm_up, color='g', linestyle='dashed', label='BE starts')
-        plt.axvline(x=len(latency_list_per) - self.warm_up, color='r', linestyle='dashed', label='BE stops')
+        plt.axvline(x=self.warm_up, color='g', linestyle='dashed', label='BEs starts')
+        plt.axvline(x=len(latency_list_per) - self.warm_up, color='r', linestyle='dashed', label='BEs stops')
         plt.axhline(y=self.latency_thr, color='m', label='Latency threshold')
         plt.xlabel('Steps')
         plt.ylabel('Q95 Latency in ms')
