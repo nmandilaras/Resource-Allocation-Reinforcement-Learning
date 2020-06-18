@@ -30,7 +30,7 @@ class Rdt(gym.Env):
     metadata = {'render.modes': ['human']}
 
     def __init__(self, latency_thr, cores_pid_hp, cores_pids_be, cores_client, path_mem, rps, clnt_thrds, wait_interval,
-                 be_name, num_ways=20, pqos_interface='MSR'):
+                 be_name, ratio, num_bes, num_ways=20, pqos_interface='MSR'):
         """ First of all we have to specify HP, BEs and assign them to different CPUs
             Need also to initialize RDT"""
         self.latency_thr = latency_thr
@@ -43,6 +43,8 @@ class Rdt(gym.Env):
         self.pqos_interface = pqos_interface
         self.warm_up = WARM_UP_PERIOD * 1000 / int(self.wait_interval)
         self.be_name = be_name
+        self.ratio = ratio
+        self.num_bes = num_bes
         self.container_bes = []
         cores_pid_hp_range = parse_num_list(cores_pid_hp)
         self.cores_pids_be_range = parse_num_list(cores_pids_be)
@@ -76,7 +78,7 @@ class Rdt(gym.Env):
         dataset = '{}/twitter_dataset/twitter_dataset_3x'.format(self.path_mem)
         servers = '{}/docker_servers.txt'.format(self.path_mem)
         self.mem_client = subprocess.Popen(['taskset', '--cpu-list', str(self.cores_client), loader, '-a',
-                                            dataset, '-s', servers, '-g', '0.8', '-c', '200', '-e', '-w',
+                                            dataset, '-s', servers, '-g', self.ratio, '-c', '200', '-e', '-w',
                                             self.clnt_thrds, '-T', self.wait_interval, '-r', str(self.rps)])
         sleep(10)  # wait in order to bind the socket
 
@@ -93,12 +95,20 @@ class Rdt(gym.Env):
         client = docker.from_env()
         if not self.container_bes:
             container, command, volume = bes[self.be_name]
-            for i in self.cores_pids_be_range:
-                log.debug("Core for be: {}".format(i))
+            cores_per_be = len(self.cores_pids_be_range) / self.num_bes
+            for i in range(self.num_bes):
+                cpuset = ','.join(map(str, self.cores_pids_be_range[i * cores_per_be: (i + 1) * cores_per_be]))
+                log.debug("Cores for be: {}".format(cpuset))
                 container_be = client.containers.run(container,
                                                       command=command, name='be_' + str(i),
-                                                      cpuset_cpus=str(i), volumes_from=[volume], detach=True)
+                                                      cpuset_cpus=cpuset, volumes_from=[volume], detach=True)
                 self.container_bes.append(container_be)
+            # for i in self.cores_pids_be_range:
+            #     log.debug("Core for be: {}".format(i))
+            #     container_be = client.containers.run(container,
+            #                                           command=command, name='be_' + str(i),
+            #                                           cpuset_cpus=str(i), volumes_from=[volume], detach=True)
+            #     self.container_bes.append(container_be)
         else:
             for container_be in self.container_bes:
                 container_be.restart()
