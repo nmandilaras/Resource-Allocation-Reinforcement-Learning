@@ -182,7 +182,10 @@ class Rdt(gym.Env):
     def step(self, action_be_ways):
         """ At each step the agent specifies the number of ways that are assigned to the be"""
 
-        done = all(self.__poll_bes())
+        polls = self.__poll_bes()
+        log.debug(polls)
+        done = all(polls)
+        # done = all(self.__poll_bes())
 
         err_msg = "%r (%s) invalid" % (action_be_ways, type(action_be_ways))
         assert self.action_space.contains(action_be_ways), err_msg
