@@ -95,7 +95,7 @@ class Rdt(gym.Env):
         client = docker.from_env()
         if not self.container_bes:
             container, command, volume = bes[self.be_name]
-            cores_per_be = len(self.cores_pids_be_range) / self.num_bes
+            cores_per_be = int(len(self.cores_pids_be_range) / self.num_bes)
             for i in range(self.num_bes):
                 cpuset = ','.join(map(str, self.cores_pids_be_range[i * cores_per_be: (i + 1) * cores_per_be]))
                 log.debug("Cores for be: {}".format(cpuset))
