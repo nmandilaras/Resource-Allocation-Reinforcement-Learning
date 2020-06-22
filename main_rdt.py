@@ -3,7 +3,7 @@ import logging.config
 from utils.argparser import init_parser
 
 parser = init_parser()
-args = parser.init_parser()
+args = parser.parse_args()
 
 logging.config.fileConfig('logging.conf')
 log = logging.getLogger('simpleExample')

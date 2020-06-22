@@ -87,7 +87,7 @@ class Rdt(gym.Env):
     def start_client(self):
         """  """
         loader = '{}/loader'.format(self.path_mem)
-        dataset = '{}/twitter_dataset/twitter_dataset_3x'.format(self.path_mem)
+        dataset = '{}/twitter_dataset/twitter_dataset_30x'.format(self.path_mem)
         servers = '{}/docker_servers.txt'.format(self.path_mem)
         self.mem_client = subprocess.Popen(['taskset', '--cpu-list', str(self.cores_client), loader, '-a',
                                             dataset, '-s', servers, '-g', self.ratio, '-c', '200', '-e', '-w',
