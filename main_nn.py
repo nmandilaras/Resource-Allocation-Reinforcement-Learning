@@ -95,7 +95,7 @@ for i_episode in range(constants.max_episodes):
                 continue
             total_loss += agent.update(transitions)  # Perform one step of the optimization (on the policy network)
             agent.adjust_exploration(steps_done)  # rate is updated at every step - taken from the tutorial
-            if double and (steps_done % TARGET_UPDATE == 0):  # Update the target network, had crusial impact
+            if double and (steps_done % TARGET_UPDATE == 0):  # Update the target network, had crucial impact
                 agent.update_target_net()
                 if constants.TENSORBOARD:
                     for name, param in agent.target_net.named_parameters():

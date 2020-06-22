@@ -91,7 +91,7 @@ class DQNAgent(Agent):
 
 
 class DoubleDQNAgent(DQNAgent):
-    def __init__(self, num_of_actions, network, criterion, optimizer, gamma=0.999, epsilon=1):
+    def __init__(self, num_of_actions, network, criterion, optimizer, scheduler=None, gamma=0.999, epsilon=1):
         super().__init__(num_of_actions, network, criterion, optimizer, gamma, epsilon)
 
     def _calc_expected_q(self, next_state):

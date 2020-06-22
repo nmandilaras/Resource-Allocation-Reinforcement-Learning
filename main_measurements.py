@@ -16,6 +16,7 @@ def write_metrics(tag, metrics, latency=None):
     writer.add_scalar(header + 'LLC', llc, step)
     writer.add_scalar(header + 'MBL', mbl, step)
     writer.add_scalar(header + 'MBR', mbr, step)
+    writer.flush()
 
 
 parser = cmd_parser()

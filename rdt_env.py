@@ -10,8 +10,6 @@ import subprocess
 import docker
 import logging.config
 from utils.config_constants import *
-import matplotlib.pyplot as plt
-from datetime import datetime
 
 logging.config.fileConfig('logging.conf')  # TODO path!
 log = logging.getLogger('simpleExample')
@@ -98,7 +96,7 @@ class Rdt(gym.Env):
 
     def start_bes(self):
         """ Check if bes are already initialized and restarts them otherwise they will be launched"""
-        log.debug("BE {} to be started".format(self.be_name))
+        log.debug("BE {} to be started.".format(self.be_name))
         client = docker.from_env()
         if not self.container_bes:
             container, command, volume = bes[self.be_name]
@@ -110,12 +108,6 @@ class Rdt(gym.Env):
                                                       command=command, name='be_' + str(i),
                                                       cpuset_cpus=cpuset, volumes_from=[volume], detach=True)
                 self.container_bes.append(container_be)
-            # for i in self.cores_pids_be_range:
-            #     log.debug("Core for be: {}".format(i))
-            #     container_be = client.containers.run(container,
-            #                                           command=command, name='be_' + str(i),
-            #                                           cpuset_cpus=str(i), volumes_from=[volume], detach=True)
-            #     self.container_bes.append(container_be)
         else:
             for container_be in self.container_bes:
                 container_be.restart()
@@ -157,10 +149,14 @@ class Rdt(gym.Env):
         latency_list.append(tail_latency)
 
         self.pqos_handler.update()
-        misses_be, socket_wide_bw = self.pqos_handler.get_hw_metrics()
+        ipc_hp, misses_hp, llc_hp, mbl_hp, mbr_hp = self.pqos_handler.get_hp_metrics()
+        ipc_be, misses_be, llc_be, mbl_be, mbr_be = self.pqos_handler.get_be_metrics()
+        socket_wide_bw = mbl_hp + mbl_be
+        info = {'lc': {},
+                'be': {}}
 
         state = [tail_latency, misses_be, socket_wide_bw, action_be_ways]  # TODO form the state properly
-        return state
+        return state, info
 
     def __reward_func(self, action_be_ways, hp_tail_latency):
         """Reward func """
@@ -188,7 +184,7 @@ class Rdt(gym.Env):
         self.start_bes()
         log.debug('BEs started')
 
-        state = self.__get_next_state(self.action_space.n)  # TODO check this!!!
+        state, _ = self.__get_next_state(self.action_space.n)  # TODO check this, with how many ways be starts?
 
         return state
 
@@ -206,11 +202,11 @@ class Rdt(gym.Env):
         self.pqos_handler.set_allocation_class(action_be_ways)
         self.pqos_handler.print_allocation_config()
 
-        state = self.__get_next_state(action_be_ways)
+        state, info = self.__get_next_state(action_be_ways)
 
         tail_latency = state[0]
         reward = self.__reward_func(action_be_ways, tail_latency)  # based on new metrics
-        return state, reward, done, None
+        return state, reward, done, info
 
         # should we return done when the first app finishes ? or should we ignore this fact and just restart
         # episode could end after a number of steps
@@ -230,16 +226,3 @@ class Rdt(gym.Env):
 
         # stop pqos
         self.stop_pqos()
-
-        # latency_per = np.percentile(latency_list, 99)
-        # latency_list_per = [min(i, latency_per) for i in latency_list]
-        # plt.plot(latency_list_per)
-        # plt.title('Effect of collocation in tail latency')
-        # plt.axvline(x=self.warm_up, color='g', linestyle='dashed', label='BEs starts')
-        # plt.axvline(x=len(latency_list_per) - self.warm_up, color='r', linestyle='dashed', label='BEs stops')
-        # plt.axhline(y=self.latency_thr, color='m', label='Latency threshold')
-        # plt.xlabel('Steps')
-        # plt.ylabel('Q95 Latency in ms')
-        # plt.legend(loc='best')
-        # plt.savefig('runs/collocation_{}.png'.format(datetime.today().strftime('%Y%m%d_%H%M%S')))
-        # plt.show()

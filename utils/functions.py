@@ -47,3 +47,18 @@ def plot_rewards(episode_durations, eval_durations, completed=False, means=None)
 
 def check_termination(eval_durations):
     return sum(list(eval_durations.values())[-constants.TERM_INTERVAL:]) / constants.TERM_INTERVAL >= 195
+
+
+# use to log latency with this
+# latency_per = np.percentile(latency_list, 99)
+# latency_list_per = [min(i, latency_per) for i in latency_list]
+# plt.plot(latency_list_per)
+# plt.title('Effect of collocation in tail latency')
+# plt.axvline(x=self.warm_up, color='g', linestyle='dashed', label='BEs starts')
+# plt.axvline(x=len(latency_list_per) - self.warm_up, color='r', linestyle='dashed', label='BEs stops')
+# plt.axhline(y=self.latency_thr, color='m', label='Latency threshold')
+# plt.xlabel('Steps')
+# plt.ylabel('Q95 Latency in ms')
+# plt.legend(loc='best')
+# plt.savefig('runs/collocation_{}.png'.format(datetime.today().strftime('%Y%m%d_%H%M%S')))
+# plt.show()

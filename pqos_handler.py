@@ -147,20 +147,20 @@ class PqosHandler:
     def get_be_metrics(self):
         return get_metrics(self.group_be.values)
 
-    def get_hw_metrics(self):
-        """Prints current values for monitored events."""
-
-        log.debug("    CORE     IPC    MISSES    LLC[KB]    MBL[MB]    MBR[MB]")
-
-        ipc_hp, misses_hp, llc_hp, mbl_hp, mbr_hp = get_metrics(self.group_hp.values)
-        ipc_be, misses_be, llc_be, mbl_be, mbr_be = get_metrics(self.group_be.values)
-
-        log.debug("%8s %6.2f %8.1f %10.1f %10.1f %10.1f" % ('lc_critical', ipc_hp, misses_hp, llc_hp, mbl_hp, mbr_hp))
-        log.debug("%8s %6.2f %8.1f %10.1f %10.1f %10.1f" % ('best_effort', ipc_be, misses_be, llc_be, mbl_be, mbr_be))
-
-        socket_wide_bw = mbl_hp + mbl_be
-
-        return misses_be, socket_wide_bw
+    # def get_hw_metrics(self):
+    #     """Prints current values for monitored events."""
+    #
+    #     log.debug("    CORE     IPC    MISSES    LLC[KB]    MBL[MB]    MBR[MB]")
+    #
+    #     ipc_hp, misses_hp, llc_hp, mbl_hp, mbr_hp = get_metrics(self.group_hp.values)
+    #     ipc_be, misses_be, llc_be, mbl_be, mbr_be = get_metrics(self.group_be.values)
+    #
+    #     log.debug("%8s %6.2f %8.1f %10.1f %10.1f %10.1f" % ('lc_critical', ipc_hp, misses_hp, llc_hp, mbl_hp, mbr_hp))
+    #     log.debug("%8s %6.2f %8.1f %10.1f %10.1f %10.1f" % ('best_effort', ipc_be, misses_be, llc_be, mbl_be, mbr_be))
+    #
+    #     socket_wide_bw = mbl_hp + mbl_be
+    #
+    #     return misses_be, socket_wide_bw
 
     def stop(self):
         """Stops monitoring."""
