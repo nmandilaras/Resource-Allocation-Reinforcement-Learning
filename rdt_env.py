@@ -230,10 +230,6 @@ class Rdt(gym.Env):
         # stop and remove the be containers
         self.stop_bes()
 
-        # wait a period of time after the collocation in order to collect metrics
-        for i in range(int(self.warm_up)):
-            latency_list.append(get_latency())
-
         # stop the mem client
         self.stop_client()
 

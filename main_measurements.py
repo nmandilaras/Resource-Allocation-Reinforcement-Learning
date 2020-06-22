@@ -37,7 +37,7 @@ log.debug("Mem client started. Warm up period follows.")
 for i in range(args.warm_up):
     q95_latency = env.get_latency()
     env.update_hw_metrics()
-    write_metrics('Latency_Critical', env.get_lc_metrics())
+    write_metrics('Latency_Critical', env.get_lc_metrics(), q95_latency)
 
 env.start_bes()
 
@@ -61,7 +61,7 @@ finally:
     for i in range(args.warm_up):
         q95_latency = env.get_latency()
         env.update_hw_metrics()
-        write_metrics('Latency_Critical', env.get_lc_metrics())
+        write_metrics('Latency_Critical', env.get_lc_metrics(), q95_latency)
 
     env.stop_client()
     env.stop_pqos()
