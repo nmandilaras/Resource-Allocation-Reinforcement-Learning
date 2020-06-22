@@ -1,6 +1,6 @@
 from rdt_env import Rdt
 import logging.config
-from utils.argparser import init_parser
+from utils.argparser import cmd_parser
 from torch.utils.tensorboard import SummaryWriter
 
 step = 0
@@ -18,7 +18,7 @@ def write_metrics(tag, metrics, latency=None):
     writer.add_scalar(header + 'MBR', mbr, step)
 
 
-parser = init_parser()
+parser = cmd_parser()
 parser.add_argument('--warm-up', type=int, default=30, help='Time to collect metrics, in seconds')
 # parser.add_argument('--path-mem', help='')
 args = parser.parse_args()
@@ -28,7 +28,7 @@ log = logging.getLogger('simpleExample')
 
 writer = SummaryWriter()
 
-env = Rdt(args.latency_thr, args.cores_lc, args.cores_be, args.cores_client, args.path_mem, args.rps,
+env = Rdt(args.latency_thr, args.cores_lc, args.cores_be, args.cores_loader, args.loader_dir, args.rps,
           args.client_threads, args.interval, args.be_name, args.ratio, args.num_bes, pqos_interface=args.interface)
 
 env.reset_pqos()

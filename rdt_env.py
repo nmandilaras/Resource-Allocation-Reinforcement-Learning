@@ -1,7 +1,6 @@
 import gym
 from time import sleep
-from gym import error, spaces, utils
-from gym.utils import seeding
+from gym import spaces
 from communication import get_latency
 from pqos import Pqos
 from pqos_handler import PqosHandlerCore, PqosHandlerPid, PqosHandlerMock
@@ -10,16 +9,15 @@ import numpy as np
 import subprocess
 import docker
 import logging.config
+from utils.config_constants import *
 import matplotlib.pyplot as plt
 from datetime import datetime
 
-WARM_UP_PERIOD = 30
-
-logging.config.fileConfig('logging.conf')  # TODO maybe we should parameterized its path
+logging.config.fileConfig('logging.conf')  # TODO path!
 log = logging.getLogger('simpleExample')
 latency_list = []
 
-bes = {
+bes = {  # NOTE better to get those from file
     'in-memory': ('zilutian/in-memory-analytics:amd64', '/data/ml-latest /data/myratings.csv --driver-memory 6g --executor-memory 16g', 'data'),
     'in-memory-small': ('zilutian/in-memory-analytics:amd64', '/data/ml-latest-small /data/myratings.csv', 'data'),
     'graphs': ('cloudsuite/graph-analytics', '--driver-memory 6g --executor-memory 16g', 'data-twitter')
@@ -29,30 +27,27 @@ bes = {
 class Rdt(gym.Env):
     metadata = {'render.modes': ['human']}
 
-    def __init__(self, latency_thr, cores_pid_hp, cores_pids_be, cores_client, path_mem, rps, clnt_thrds, wait_interval,
-                 be_name, ratio, num_bes, num_ways=20, pqos_interface='MSR'):
-        """ First of all we have to specify HP, BEs and assign them to different CPUs
-            Need also to initialize RDT"""
-        self.latency_thr = latency_thr
-        self.cores_pids_be = cores_pids_be
-        self.cores_client = cores_client
-        self.path_mem = path_mem
-        self.rps = rps
-        self.clnt_thrds = clnt_thrds
-        self.wait_interval = wait_interval
-        self.pqos_interface = pqos_interface
-        self.warm_up = WARM_UP_PERIOD * 1000 / int(self.wait_interval)
-        self.be_name = be_name
-        self.ratio = ratio
-        self.num_bes = num_bes
+    def __init__(self, config_env):
+        """ """
+        self.latency_thr = int(config_env[LATENCY_thr])
+        self.cores_pids_be = config_env[CORES_BE]
+        self.cores_loader = config_env[CORES_LOADER]
+        self.loader_dir = config_env[LOADER_DIR]
+        self.rps = int(config_env[LOADER_RPS])
+        self.loader_threads = config_env[LOADER_THREADS]
+        self.action_interval = config_env[ACTION_INTERVAL]
+        self.pqos_interface = config_env[PQOS_INTERFACE]
+        self.be_name = config_env[BE_NAME]
+        self.ratio = config_env[GET_SET_RATIO]
+        self.num_bes = int(config_env[NUM_BES])
         self.container_bes = []
-        cores_pid_hp_range = parse_num_list(cores_pid_hp)
-        self.cores_pids_be_range = parse_num_list(cores_pids_be)
+        cores_pid_hp_range = parse_num_list(config_env[CORES_LC])
+        self.cores_pids_be_range = parse_num_list(self.cores_pids_be)
         # log.debug(cores_pid_hp_range)
         # log.debug(self.cores_pids_be_range)
-        # log.debug(cores_client)
+        # log.debug(cores_loader)
 
-        self.action_space = spaces.Discrete(num_ways)  # TODO maybe will reduce this, only few ways to the be
+        self.action_space = spaces.Discrete(20)  # TODO maybe will reduce this, only few ways to the be
         self.observation_space = spaces.Box(
             low=np.array([0, 0, 0, 1]), high=np.array([np.finfo(np.float32).max, np.finfo(np.float32).max,
                                         np.finfo(np.float32).max, self.action_space.n], dtype=np.float32),
@@ -62,12 +57,12 @@ class Rdt(gym.Env):
         self.container_be = None
 
         # initialize pqos
-        if pqos_interface == 'none':
+        if self.pqos_interface == 'none':
             self.pqos_handler = PqosHandlerMock()
         else:
             self.pqos = Pqos()
-            self.pqos.init(pqos_interface)
-            if pqos_interface == 'OS':
+            self.pqos.init(self.pqos_interface)
+            if self.pqos_interface == 'OS':
                 self.pqos_handler = PqosHandlerPid(cores_pid_hp_range, self.cores_pids_be_range)
             else:
                 self.pqos_handler = PqosHandlerCore(cores_pid_hp_range, self.cores_pids_be_range)
@@ -86,13 +81,13 @@ class Rdt(gym.Env):
 
     def start_client(self):
         """  """
-        loader = '{}/loader'.format(self.path_mem)
-        dataset = '{}/twitter_dataset/twitter_dataset_30x'.format(self.path_mem)
-        servers = '{}/docker_servers.txt'.format(self.path_mem)
-        self.mem_client = subprocess.Popen(['taskset', '--cpu-list', str(self.cores_client), loader, '-a',
+        loader = '{}/loader'.format(self.loader_dir)
+        dataset = '{}/twitter_dataset/twitter_dataset_30x'.format(self.loader_dir)
+        servers = '{}/docker_servers.txt'.format(self.loader_dir)
+        self.mem_client = subprocess.Popen(['taskset', '--cpu-list', self.cores_loader, loader, '-a',
                                             dataset, '-s', servers, '-g', self.ratio, '-c', '200', '-e', '-w',
-                                            self.clnt_thrds, '-T', self.wait_interval, '-r', str(self.rps)])
-        sleep(20)  # wait in order to bind the socket
+                                            self.loader_threads, '-T', self.action_interval, '-r', str(self.rps)])
+        sleep(10)  # wait in order to bind the socket
 
     def stop_client(self):
         self.mem_client.terminate()

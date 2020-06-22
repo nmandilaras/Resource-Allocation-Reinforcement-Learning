@@ -1,0 +1,18 @@
+[env]
+latency_thr = 10
+cores_lc = 0
+cores_be = 1
+cores_loader = 2
+loader_dir = /home/nikmand/CLionProjects/memcached
+interval = 200
+rps = 1000
+loader_threads = 1
+be_name = in-memory-small
+ratio = 0
+num_bes = 1
+pqos_interface = none
+
+[agent]
+
+
+[misc]
