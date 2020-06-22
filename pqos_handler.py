@@ -141,6 +141,12 @@ class PqosHandler:
 
         self.mon.poll([self.group_hp, self.group_be])
 
+    def get_hp_metrics(self):
+        return get_metrics(self.group_hp.values)
+
+    def get_be_metrics(self):
+        return get_metrics(self.group_be.values)
+
     def get_hw_metrics(self):
         """Prints current values for monitored events."""
 
@@ -330,7 +336,7 @@ class PqosHandlerPid(PqosHandler):
 class PqosHandlerMock(PqosHandler):
     """"""
     def __init__(self):
-
+        self.group_hp, self.group_be = None, None
         pass
 
     def setup(self):

@@ -48,8 +48,8 @@ class Rdt(gym.Env):
         self.container_bes = []
         cores_pid_hp_range = parse_num_list(cores_pid_hp)
         self.cores_pids_be_range = parse_num_list(cores_pids_be)
-        log.debug(cores_pid_hp_range)
-        log.debug(self.cores_pids_be_range)
+        # log.debug(cores_pid_hp_range)
+        # log.debug(self.cores_pids_be_range)
         # log.debug(cores_client)
 
         self.action_space = spaces.Discrete(num_ways)  # TODO maybe will reduce this, only few ways to the be
@@ -72,7 +72,19 @@ class Rdt(gym.Env):
             else:
                 self.pqos_handler = PqosHandlerCore(cores_pid_hp_range, self.cores_pids_be_range)
 
-    def __start_client(self):
+    def reset_pqos(self):
+        self.pqos_handler.reset()
+        self.pqos_handler.setup()
+        self.pqos_handler.set_association_class()
+        self.pqos_handler.print_association_config()
+
+    def stop_pqos(self):
+        self.pqos_handler.stop()
+        self.pqos_handler.reset()
+        if self.pqos_interface != 'none':
+            self.pqos.fini()
+
+    def start_client(self):
         """  """
         loader = '{}/loader'.format(self.path_mem)
         dataset = '{}/twitter_dataset/twitter_dataset_3x'.format(self.path_mem)
@@ -80,16 +92,16 @@ class Rdt(gym.Env):
         self.mem_client = subprocess.Popen(['taskset', '--cpu-list', str(self.cores_client), loader, '-a',
                                             dataset, '-s', servers, '-g', self.ratio, '-c', '200', '-e', '-w',
                                             self.clnt_thrds, '-T', self.wait_interval, '-r', str(self.rps)])
-        sleep(10)  # wait in order to bind the socket
+        sleep(20)  # wait in order to bind the socket
 
-    def __stop_client(self):
+    def stop_client(self):
         self.mem_client.terminate()
         sleep(0.5)
         while self.mem_client.poll() is None:
             log.debug("Unable to shutdown mem client. Retrying...")
             self.mem_client.terminate()
 
-    def __start_bes(self):
+    def start_bes(self):
         """ Check if bes are already initialized and restarts them otherwise they will be launched"""
         log.debug("BE {} to be started".format(self.be_name))
         client = docker.from_env()
@@ -113,7 +125,7 @@ class Rdt(gym.Env):
             for container_be in self.container_bes:
                 container_be.restart()
 
-    def __poll_bes(self):
+    def poll_bes(self):
         status = []
         for container_be in self.container_bes:
             container_be.reload()
@@ -124,10 +136,23 @@ class Rdt(gym.Env):
 
         return status
 
-    def __stop_bes(self):
+    def stop_bes(self):
         for container_be in self.container_bes:
             container_be.stop()
             container_be.remove()
+
+    @staticmethod
+    def get_latency():
+        return get_latency()
+
+    def update_hw_metrics(self):
+        self.pqos_handler.update()
+
+    def get_lc_metrics(self):  # to be called after update metrics
+        return self.pqos_handler.get_hp_metrics()
+
+    def get_be_metrics(self):
+        return self.pqos_handler.get_be_metrics()
 
     def __get_next_state(self, action_be_ways):
         # poll metrics so the next poll will contains deltas from this point just after the action
@@ -156,36 +181,28 @@ class Rdt(gym.Env):
         """ Probably when we end up in a very bad situation we want to start from the beginning.
             We may also want to start from the beginning when one process finishes or all of them finishes
           """
-        self.pqos_handler.reset()
-        self.pqos_handler.setup()
-        self.pqos_handler.set_association_class()
-        self.pqos_handler.print_association_config()
+        self.reset_pqos()
 
         # (re)launch the load tester
         if self.mem_client is not None:
-            self.__stop_client()
-        self.__start_client()
+            self.stop_client()
+        self.start_client()
         log.debug("Mem client started. Warm up period follows.")
 
-        # collect tail latency before launching be
-        for i in range(int(self.warm_up)):
-            latency_list.append(get_latency())
-
         # (re)launch the be containers
-        self.__start_bes()
+        self.start_bes()
         log.debug('BEs started')
 
-        state = self.__get_next_state(self.action_space.n)
+        state = self.__get_next_state(self.action_space.n)  # TODO check this!!!
 
         return state
 
     def step(self, action_be_ways):
         """ At each step the agent specifies the number of ways that are assigned to the be"""
 
-        polls = self.__poll_bes()
-        log.debug(polls)
-        done = all(polls)
-        # done = all(self.__poll_bes())
+        status = self.poll_bes()
+        log.debug(status)
+        done = all(status)
 
         err_msg = "%r (%s) invalid" % (action_be_ways, type(action_be_ways))
         assert self.action_space.contains(action_be_ways), err_msg
@@ -211,30 +228,27 @@ class Rdt(gym.Env):
         log.debug('Stopping everything!')
 
         # stop and remove the be containers
-        self.__stop_bes()
+        self.stop_bes()
 
         # wait a period of time after the collocation in order to collect metrics
         for i in range(int(self.warm_up)):
             latency_list.append(get_latency())
 
         # stop the mem client
-        self.__stop_client()
+        self.stop_client()
 
-        # stop pqos monitoring
-        self.pqos_handler.stop()
-        self.pqos_handler.reset()
-        if self.pqos_interface != 'none':
-            self.pqos.fini()
+        # stop pqos
+        self.stop_pqos()
 
-        latency_per = np.percentile(latency_list, 99)
-        latency_list_per = [min(i, latency_per) for i in latency_list]
-        plt.plot(latency_list_per)
-        plt.title('Effect of collocation in tail latency')
-        plt.axvline(x=self.warm_up, color='g', linestyle='dashed', label='BEs starts')
-        plt.axvline(x=len(latency_list_per) - self.warm_up, color='r', linestyle='dashed', label='BEs stops')
-        plt.axhline(y=self.latency_thr, color='m', label='Latency threshold')
-        plt.xlabel('Steps')
-        plt.ylabel('Q95 Latency in ms')
-        plt.legend(loc='best')
-        plt.savefig('runs/collocation_{}.png'.format(datetime.today().strftime('%Y%m%d_%H%M%S')))
+        # latency_per = np.percentile(latency_list, 99)
+        # latency_list_per = [min(i, latency_per) for i in latency_list]
+        # plt.plot(latency_list_per)
+        # plt.title('Effect of collocation in tail latency')
+        # plt.axvline(x=self.warm_up, color='g', linestyle='dashed', label='BEs starts')
+        # plt.axvline(x=len(latency_list_per) - self.warm_up, color='r', linestyle='dashed', label='BEs stops')
+        # plt.axhline(y=self.latency_thr, color='m', label='Latency threshold')
+        # plt.xlabel('Steps')
+        # plt.ylabel('Q95 Latency in ms')
+        # plt.legend(loc='best')
+        # plt.savefig('runs/collocation_{}.png'.format(datetime.today().strftime('%Y%m%d_%H%M%S')))
         # plt.show()
