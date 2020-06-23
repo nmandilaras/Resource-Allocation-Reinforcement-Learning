@@ -52,11 +52,11 @@ log.debug("Number of available actions: {}".format(num_of_actions))
 log.debug("NUmber of input features: {}".format(num_of_observations))
 
 lr = float(config_agent[LR])
-layers_dim = ast.literal_eval(config_env[LAYERS_DIM])
-target_update = int(config_env[TARGET_UPDATE])  # target net is updated with the weights of policy net every x updates
-batch_size = int(config_env[BATCH_SIZE])
-gamma = float(config_env[GAMMA])
-mem_size = int(config_env[MEM_SIZE])
+layers_dim = ast.literal_eval(config_agent[LAYERS_DIM])
+target_update = int(config_agent[TARGET_UPDATE])  # target net is updated with the weights of policy net every x updates
+batch_size = int(config_agent[BATCH_SIZE])
+gamma = float(config_agent[GAMMA])
+mem_size = int(config_agent[MEM_SIZE])
 
 dqn_arch = Dueling
 network = PolicyFC(num_of_observations, layers_dim, num_of_actions, dqn_arch, dropout=0)
