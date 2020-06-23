@@ -48,8 +48,8 @@ env = Rdt(config_env)
 num_of_observations = env.observation_space.shape[0]
 num_of_actions = env.action_space.n
 
-log.debug("Number of available actions: {}".format(num_of_actions))
-log.debug("NUmber of input features: {}".format(num_of_observations))
+log.info("Number of available actions: {}".format(num_of_actions))
+log.info("NUmber of input features: {}".format(num_of_observations))
 
 lr = float(config_agent[LR])
 layers_dim = ast.literal_eval(config_agent[LAYERS_DIM])
@@ -61,7 +61,7 @@ mem_size = int(config_agent[MEM_SIZE])
 dqn_arch = Dueling
 network = PolicyFC(num_of_observations, layers_dim, num_of_actions, dqn_arch, dropout=0)
 
-log.debug("Number of parameters in our model: {}".format(sum(x.numel() for x in network.parameters())))
+log.info("Number of parameters in our model: {}".format(sum(x.numel() for x in network.parameters())))
 
 criterion = torch.nn.MSELoss()  # torch.nn.SmoothL1Loss()  # Huber loss
 optimizer = optim.Adam(network.parameters(), lr)
@@ -106,7 +106,7 @@ try:
     log.info("Be finished")
     writer.add_graph(agent.policy_net, torch.tensor(state, device=agent.device))
     writer.add_hparams({'lr': lr, 'gamma': gamma, 'HL Dims': str(layers_dim), 'Target_upd_interval': target_update,
-                        'Batch Size': batch_size})
+                        'Batch Size': batch_size}, {})
     writer.flush()
 finally:
     env.stop()
