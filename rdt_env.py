@@ -45,7 +45,7 @@ class Rdt(gym.Env):
         # log.debug(self.cores_pids_be_range)
         # log.debug(cores_loader)
 
-        self.action_space = spaces.Discrete(config_env[NUM_WAYS])
+        self.action_space = spaces.Discrete(int(config_env[NUM_WAYS]))
         self.observation_space = spaces.Box(
             low=np.array([0, 0, 0, 1]), high=np.array([np.finfo(np.float32).max, np.finfo(np.float32).max,
                                         np.finfo(np.float32).max, self.action_space.n], dtype=np.float32),
