@@ -45,7 +45,7 @@ class Rdt(gym.Env):
         # log.debug(self.cores_pids_be_range)
         # log.debug(cores_loader)
 
-        self.action_space = spaces.Discrete(19)  # TODO maybe will reduce this, only few ways to the be
+        self.action_space = spaces.Discrete(config_env[NUM_WAYS])
         self.observation_space = spaces.Box(
             low=np.array([0, 0, 0, 1]), high=np.array([np.finfo(np.float32).max, np.finfo(np.float32).max,
                                         np.finfo(np.float32).max, self.action_space.n], dtype=np.float32),
@@ -160,7 +160,7 @@ class Rdt(gym.Env):
 
     def __reward_func(self, action_be_ways, hp_tail_latency):
         """Reward func """
-        if hp_tail_latency >= self.latency_thr:
+        if hp_tail_latency < self.latency_thr:
             reward = action_be_ways
             # NOTE by shaping the reward function in this way, we are making the assumption that progress of BEs is
             # depended by the LLC ways that are allocated to them at any point of their execution

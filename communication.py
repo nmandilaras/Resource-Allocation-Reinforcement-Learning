@@ -16,6 +16,6 @@ def get_latency():
         data = s.recv(8)
         q95 = struct.unpack("d", data)[0]
 
-    log.debug('Tail latency q95: {}'.format(q95))
+    # log.debug('Tail latency q95: {}'.format(q95))
 
     return q95

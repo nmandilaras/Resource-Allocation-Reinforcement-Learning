@@ -10,6 +10,7 @@ loader_threads = 1
 be_name = in-memory-small
 ratio = 0
 num_bes = 1
+num_ways = 10
 pqos_interface = none
 
 [agent]
