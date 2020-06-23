@@ -1,3 +1,4 @@
+# env
 LATENCY_thr = "latency_thr"
 CORES_LC = "cores_lc"
 CORES_BE = 'cores_be'
@@ -11,3 +12,13 @@ GET_SET_RATIO = 'ratio'
 NUM_BES = 'num_bes'
 NUM_WAYS = 'num_ways'
 PQOS_INTERFACE = 'pqos_interface'
+
+# agent
+LR = 'lr'
+LAYERS_DIM = 'layers_dim'
+TARGET_UPDATE = 'target_update'
+BATCH_SIZE = 'batch_size'
+GAMMA = 'gamma'
+MEM_SIZE = 'mem_size'
+
+# misc
