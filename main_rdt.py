@@ -99,8 +99,8 @@ try:
             write_metrics(key, value)
         writer.add_scalar('Agent/Action', action, step)
         writer.add_scalar('Agent/Reward', reward, step)
-        writer.add_scalar('Agent/Loss', loss, step)
         writer.add_scalar('Agent/Epsilon', agent.epsilon, step)
+        writer.add_scalar('Agent/Loss', loss, step)
         writer.add_graph(agent.policy_net, torch.tensor(state, device=agent.device))
         log_net(agent.policy_net, 'PolicyNet', step)
 

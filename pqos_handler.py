@@ -191,7 +191,7 @@ class PqosHandler:
         Parameters:
             ways_be: num of ways to be assigned for bes
         """
-        mask_be = ways[ways_be - 1]
+        mask_be = ways[ways_be]
         mask_hp = mask_be ^ base
         cos_hp = self.l3ca.COS(self.cos_id_hp, mask_hp)
         cos_be = self.l3ca.COS(self.cos_id_be, mask_be)

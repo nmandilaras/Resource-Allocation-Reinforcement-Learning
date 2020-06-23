@@ -45,7 +45,7 @@ class Rdt(gym.Env):
         # log.debug(self.cores_pids_be_range)
         # log.debug(cores_loader)
 
-        self.action_space = spaces.Discrete(20)  # TODO maybe will reduce this, only few ways to the be
+        self.action_space = spaces.Discrete(19)  # TODO maybe will reduce this, only few ways to the be
         self.observation_space = spaces.Box(
             low=np.array([0, 0, 0, 1]), high=np.array([np.finfo(np.float32).max, np.finfo(np.float32).max,
                                         np.finfo(np.float32).max, self.action_space.n], dtype=np.float32),
@@ -191,6 +191,7 @@ class Rdt(gym.Env):
     def step(self, action_be_ways):
         """ At each step the agent specifies the number of ways that are assigned to the be"""
 
+        log.debug("Action selected: {}".format(action_be_ways))
         status = self.poll_bes()
         log.debug(status)
         done = all(status)
