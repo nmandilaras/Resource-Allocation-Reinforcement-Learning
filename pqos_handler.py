@@ -5,7 +5,7 @@ from pqos.monitoring import PqosMon
 from pqos.l3ca import PqosCatL3
 from pqos.allocation import PqosAlloc
 import logging.config
-from random import randint
+from random import randint, randrange
 
 logging.config.fileConfig('logging.conf')
 log = logging.getLogger('simpleExample')
@@ -67,6 +67,16 @@ def get_metrics(group_values):
     llc = bytes_to_kb(group_values.llc)
     mbl = bytes_to_mb(group_values.mbm_local_delta)
     mbr = bytes_to_mb(group_values.mbm_remote_delta)
+
+    return ipc, misses, llc, mbl, mbr
+
+
+def get_metrics_random():
+    ipc = randrange(0, 2)
+    misses = randint(1e3, 1e5)
+    llc = randint(1e3, 1e5)
+    mbl = randint(1e2, 1e3)
+    mbr = randint(1e2, 1e3)
 
     return ipc, misses, llc, mbl, mbr
 
@@ -348,11 +358,17 @@ class PqosHandlerMock(PqosHandler):
     def update(self):
         pass
 
-    def get_hw_metrics(self):
-        misses_be = randint(100, 200)
-        socket_wide_bw = randint(10, 20)
+    def get_hp_metrics(self):
+        return get_metrics_random()
 
-        return misses_be, socket_wide_bw
+    def get_be_metrics(self):
+        return get_metrics_random()
+
+    # def get_hw_metrics(self):
+    #     misses_be = randint(100, 200)
+    #     socket_wide_bw = randint(10, 20)
+    #
+    #     return misses_be, socket_wide_bw
 
     def stop(self):
         pass

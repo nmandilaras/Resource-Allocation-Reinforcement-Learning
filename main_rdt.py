@@ -19,6 +19,20 @@ def log_net(net, net_name, step):
     writer.flush()
 
 
+def write_metrics(tag, metrics):
+    ipc, misses, llc, mbl, mbr, latency = metrics
+    # log.debug("%8s %6.2f %8.1f %10.1f %10.1f %10.1f" % ('lc_critical', ipc, misses, llc, mbl, mbr))
+    if tag == 'Latency Critical':
+        writer.add_scalar('Latency Critical/Latency', latency, step)
+    header = '{}/'.format(tag)
+    writer.add_scalar(header + 'IPC', ipc, step)
+    writer.add_scalar(header + 'Misses', misses, step)
+    writer.add_scalar(header + 'LLC', llc, step)
+    writer.add_scalar(header + 'MBL', mbl, step)
+    writer.add_scalar(header + 'MBR', mbr, step)
+    writer.flush()
+
+
 parser = cmd_parser()
 args = parser.parse_args()
 config_env, config_agent, config_misc = config_parser(args.config_file)
@@ -65,7 +79,7 @@ try:
 
     while not done:
         action = agent.choose_action(state)
-        next_state, reward, done, _ = env.step(action)
+        next_state, reward, done, info = env.step(action)
         next_state = np.float32(next_state)
         memory.push(state, action, next_state, reward, done)  # Store the transition in memory
         state = next_state
@@ -81,10 +95,16 @@ try:
             agent.update_target_net()
             log_net(agent.target_net, 'TargetNet', step)
 
-        writer.add_scalar('Agent/Loss', loss, step)
+        for key, value in info.items():
+            write_metrics(key, value)
+        writer.add_scalar('Agent/Action', action, step)
         writer.add_scalar('Agent/Reward', reward, step)
+        writer.add_scalar('Agent/Loss', loss, step)
         writer.add_scalar('Agent/Epsilon', agent.epsilon, step)
+        writer.add_graph(agent.policy_net, torch.tensor(state, device=agent.device))
         log_net(agent.policy_net, 'PolicyNet', step)
+
+        # TODO add hypeparameters
 
     log.info("Be finished")
 finally:

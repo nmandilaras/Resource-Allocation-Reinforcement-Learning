@@ -152,8 +152,8 @@ class Rdt(gym.Env):
         ipc_hp, misses_hp, llc_hp, mbl_hp, mbr_hp = self.pqos_handler.get_hp_metrics()
         ipc_be, misses_be, llc_be, mbl_be, mbr_be = self.pqos_handler.get_be_metrics()
         socket_wide_bw = mbl_hp + mbl_be
-        info = {'lc': {},
-                'be': {}}
+        info = {'Latency Critical': (ipc_hp, misses_hp, llc_hp, mbl_hp, mbr_hp, tail_latency),
+                'Best Effort': (ipc_be, misses_be, llc_be, mbl_be, mbr_be, None)}
 
         state = [tail_latency, misses_be, socket_wide_bw, action_be_ways]  # TODO form the state properly
         return state, info
