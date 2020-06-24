@@ -40,6 +40,8 @@ try:
     while not done:
 
         next_state, reward, done, info = env.step(args.ways_be)
+        writer.add_scalar('Agent/Action', args.ways_be, step)
+        writer.add_scalar('Agent/Reward', reward, step)
         for key, value in info.items():
             write_metrics(key, value, writer, step)
 
