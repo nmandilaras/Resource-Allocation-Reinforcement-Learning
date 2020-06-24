@@ -14,6 +14,11 @@ num_ways = 10
 pqos_interface = none
 
 [agent]
-
+lr = 1e-2
+layers_dim = [24, 48]
+target_update = 100
+batch_size = 32
+gamma = 0.99
+mem_size = 100000
 
 [misc]

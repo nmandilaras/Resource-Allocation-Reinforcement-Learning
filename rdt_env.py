@@ -13,7 +13,6 @@ from utils.config_constants import *
 
 logging.config.fileConfig('logging.conf')  # TODO path!
 log = logging.getLogger('simpleExample')
-latency_list = []
 
 bes = {  # NOTE better to get those from file
     'in-memory': ('zilutian/in-memory-analytics:amd64', '/data/ml-latest /data/myratings.csv --driver-memory 6g --executor-memory 16g', 'data'),
@@ -47,8 +46,7 @@ class Rdt(gym.Env):
 
         self.action_space = spaces.Discrete(int(config_env[NUM_WAYS]))
         self.observation_space = spaces.Box(
-            low=np.array([0, 0, 0, 1]), high=np.array([np.finfo(np.float32).max, np.finfo(np.float32).max,
-                                        np.finfo(np.float32).max, self.action_space.n], dtype=np.float32),
+            low=np.array([0, 0, 0, 0]), high=np.array([20, 3 * 1e7, 6 * 1e3, self.action_space.n-1], dtype=np.float32),
             dtype=np.float32)
 
         self.mem_client = None
@@ -145,8 +143,7 @@ class Rdt(gym.Env):
         # poll metrics so the next poll will contains deltas from this point just after the action
         self.pqos_handler.update()
         # start the stats record, the recorder will go to sleep and the it 'll send the results
-        tail_latency = get_latency()  # randint(0, 20)  # NOTE this call will block
-        latency_list.append(tail_latency)
+        tail_latency = get_latency()  # NOTE this call will block
 
         self.pqos_handler.update()
         ipc_hp, misses_hp, llc_hp, mbl_hp, mbr_hp = self.pqos_handler.get_hp_metrics()
@@ -155,8 +152,12 @@ class Rdt(gym.Env):
         info = {'Latency Critical': (ipc_hp, misses_hp, llc_hp, mbl_hp, mbr_hp, tail_latency),
                 'Best Effort': (ipc_be, misses_be, llc_be, mbl_be, mbr_be, None)}
 
-        state = [tail_latency, misses_be, socket_wide_bw, action_be_ways]  # TODO form the state properly
-        return state, info
+        state = [tail_latency, misses_be, socket_wide_bw, action_be_ways]
+
+        # normalize the state
+        state_normalized = [min(metric / max_val, 1) for metric, max_val in zip(state, self.observation_space.high)]
+
+        return state_normalized, info, tail_latency
 
     def __reward_func(self, action_be_ways, hp_tail_latency):
         """Reward func """
@@ -184,7 +185,7 @@ class Rdt(gym.Env):
         self.start_bes()
         log.debug('BEs started')
 
-        state, _ = self.__get_next_state(self.action_space.n)  # TODO check this, with how many ways be starts?
+        state, _, _ = self.__get_next_state(self.action_space.n)  # TODO check this, with how many ways be starts?
 
         return state
 
@@ -203,10 +204,10 @@ class Rdt(gym.Env):
         self.pqos_handler.set_allocation_class(action_be_ways)
         self.pqos_handler.print_allocation_config()
 
-        state, info = self.__get_next_state(action_be_ways)
+        state, info, tail_latency = self.__get_next_state(action_be_ways)
 
-        tail_latency = state[0]
         reward = self.__reward_func(action_be_ways, tail_latency)  # based on new metrics
+
         return state, reward, done, info
 
         # should we return done when the first app finishes ? or should we ignore this fact and just restart
