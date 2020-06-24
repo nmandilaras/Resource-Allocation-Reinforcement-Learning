@@ -52,6 +52,7 @@ class Rdt(gym.Env):
 
         self.mem_client = None
         self.container_be = None
+        self.previous_action = -1  # -1 action means all ways available to all groups
 
         # initialize pqos
         if self.pqos_interface == 'none':
@@ -69,6 +70,7 @@ class Rdt(gym.Env):
         self.pqos_handler.setup()
         self.pqos_handler.set_association_class()
         self.pqos_handler.print_association_config()
+        self.previous_action = -1
 
     def stop_pqos(self):
         self.pqos_handler.stop()
@@ -186,7 +188,7 @@ class Rdt(gym.Env):
         self.start_bes()
         log.debug('BEs started')
 
-        state, _, _ = self.__get_next_state(self.action_space.n)  # TODO check this, with how many ways be starts?
+        state, _, _ = self.__get_next_state(self.action_space.n)  # we start with both groups sharing all ways
 
         return state
 
@@ -201,9 +203,11 @@ class Rdt(gym.Env):
         err_msg = "%r (%s) invalid" % (action_be_ways, type(action_be_ways))
         assert self.action_space.contains(action_be_ways), err_msg
 
-        # enforce the decision with PQOS
-        self.pqos_handler.set_allocation_class(action_be_ways)
-        self.pqos_handler.print_allocation_config()
+        if action_be_ways != self.previous_action:  # avoid enforcing decision when nothing changes
+            # enforce the decision with PQOS
+            self.pqos_handler.set_allocation_class(action_be_ways)
+            # self.pqos_handler.print_allocation_config()
+            self.previous_action = action_be_ways
 
         state, info, tail_latency = self.__get_next_state(action_be_ways)
 
