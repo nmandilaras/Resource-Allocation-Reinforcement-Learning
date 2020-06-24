@@ -200,8 +200,8 @@ class Rdt(gym.Env):
         log.debug(status)
         done = all(status)
 
-        err_msg = "%r (%s) invalid" % (action_be_ways, type(action_be_ways))
-        assert self.action_space.contains(action_be_ways), err_msg
+        # err_msg = "%r (%s) invalid" % (action_be_ways, type(action_be_ways))
+        # assert self.action_space.contains(action_be_ways), err_msg
 
         if action_be_ways != self.previous_action:  # avoid enforcing decision when nothing changes
             # enforce the decision with PQOS
