@@ -11,6 +11,7 @@ from utils.memory import Memory
 from agents.dqn_agents import DQNAgent, DoubleDQNAgent
 from torch.utils.tensorboard import SummaryWriter
 from utils.config_constants import *
+from utils.functions import write_metrics
 
 
 def log_net(net, net_name, step):
@@ -18,19 +19,6 @@ def log_net(net, net_name, step):
     for name, param in net.named_parameters():
         headline, title = name.rsplit(".", 1)
         writer.add_histogram(net_name + '/' + headline + '/' + title, param, step)
-    writer.flush()
-
-
-def write_metrics(tag, metrics):
-    ipc, misses, llc, mbl, mbr, latency = metrics
-    if tag == 'Latency Critical':
-        writer.add_scalar('Latency Critical/Latency', latency, step)
-    header = '{}/'.format(tag)
-    writer.add_scalar(header + 'IPC', ipc, step)
-    writer.add_scalar(header + 'Misses', misses, step)
-    writer.add_scalar(header + 'LLC', llc, step)
-    writer.add_scalar(header + 'MBL', mbl, step)
-    writer.add_scalar(header + 'MBR', mbr, step)
     writer.flush()
 
 
@@ -95,7 +83,7 @@ try:
             log_net(agent.target_net, 'TargetNet', step)
 
         for key, value in info.items():
-            write_metrics(key, value)
+            write_metrics(key, value, writer, step)
         writer.add_scalar('Agent/Action', action, step)
         writer.add_scalar('Agent/Reward', reward, step)
         writer.add_scalar('Agent/Epsilon', agent.epsilon, step)

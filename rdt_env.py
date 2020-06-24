@@ -9,6 +9,7 @@ import numpy as np
 import subprocess
 import docker
 import logging.config
+from utils.constants import LC_TAG, BE_TAG
 from utils.config_constants import *
 
 logging.config.fileConfig('logging.conf')  # TODO path!
@@ -149,8 +150,8 @@ class Rdt(gym.Env):
         ipc_hp, misses_hp, llc_hp, mbl_hp, mbr_hp = self.pqos_handler.get_hp_metrics()
         ipc_be, misses_be, llc_be, mbl_be, mbr_be = self.pqos_handler.get_be_metrics()
         socket_wide_bw = mbl_hp + mbl_be
-        info = {'Latency Critical': (ipc_hp, misses_hp, llc_hp, mbl_hp, mbr_hp, tail_latency),
-                'Best Effort': (ipc_be, misses_be, llc_be, mbl_be, mbr_be, None)}
+        info = {LC_TAG: (ipc_hp, misses_hp, llc_hp, mbl_hp, mbr_hp, tail_latency),
+                BE_TAG: (ipc_be, misses_be, llc_be, mbl_be, mbr_be, None)}
 
         state = [tail_latency, misses_be, socket_wide_bw, action_be_ways]
 

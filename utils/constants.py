@@ -22,6 +22,9 @@ EPS_DECAY = 0.0005  # drops to min around 100 episodes
 EVAL_INTERVAL = 10
 TERM_INTERVAL = 100 // EVAL_INTERVAL
 
+LC_TAG = "Latency Critical"
+BE_TAG = "Best Effort"
+
 
 class RLAlgorithms(Enum):
     Q_LEARNING = '0'

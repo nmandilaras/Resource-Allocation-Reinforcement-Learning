@@ -1,36 +1,24 @@
 from rdt_env import Rdt
 import logging.config
-from utils.argparser import cmd_parser
+from utils.argparser import cmd_parser, config_parser
 from torch.utils.tensorboard import SummaryWriter
+from utils.functions import write_metrics
+from utils.constants import LC_TAG
 
 step = 0
 
-
-def write_metrics(tag, metrics, latency=None):
-    ipc, misses, llc, mbl, mbr = metrics
-    if tag == 'Latency_Critical':
-        writer.add_scalar('Metrics/Latency_Critical/Latency', latency, step)
-    header = 'Metrics/{}/'.format(tag)
-    writer.add_scalar(header + 'IPC', ipc, step)
-    writer.add_scalar(header + 'Misses', misses, step)
-    writer.add_scalar(header + 'LLC', llc, step)
-    writer.add_scalar(header + 'MBL', mbl, step)
-    writer.add_scalar(header + 'MBR', mbr, step)
-    writer.flush()
-
-
 parser = cmd_parser()
-parser.add_argument('--warm-up', type=int, default=30, help='Time to collect metrics, in seconds')
-# parser.add_argument('--path-mem', help='')
+parser.add_argument('--warm-up', type=int, default=0, help='Time to collect metrics before/after bes execution')
+parser.add_argument('--ways-be', type=int, default=-1, help='Ways to be allocated to best effort group')
 args = parser.parse_args()
+config_env, config_agent, config_misc = config_parser(args.config_file)
 
 logging.config.fileConfig('logging.conf')
 log = logging.getLogger('simpleExample')
 
 writer = SummaryWriter()
 
-env = Rdt(args.latency_thr, args.cores_lc, args.cores_be, args.cores_loader, args.loader_dir, args.rps,
-          args.client_threads, args.interval, args.be_name, args.ratio, args.num_bes, pqos_interface=args.interface)
+env = Rdt(config_env)
 
 env.reset_pqos()
 env.start_client()
@@ -40,22 +28,21 @@ log.debug("Mem client started. Warm up period follows.")
 for i in range(args.warm_up):
     q95_latency = env.get_latency()
     env.update_hw_metrics()
-    write_metrics('Latency_Critical', env.get_lc_metrics(), q95_latency)
+    write_metrics(LC_TAG, env.get_lc_metrics(), writer, step)
     step += 1
 
 env.start_bes()
 
+log.info("Num of ways that are going to be statically allocated to BEs: {}".format(args.ways_be))
+
 done = False
 try:
     while not done:
-        status = env.poll_bes()
-        log.debug(status)
-        done = all(status)
 
-        q95_latency = env.get_latency()
-        env.update_hw_metrics()
-        write_metrics('Latency_Critical', env.get_lc_metrics(), q95_latency)
-        write_metrics('Best_Effort', env.get_lc_metrics())
+        next_state, reward, done, info = env.step(args.ways_be)
+        for key, value in info.items():
+            write_metrics(key, value, writer, step)
+
         step += 1
 
     log.info("Be finished")
@@ -66,7 +53,7 @@ finally:
     for i in range(args.warm_up):
         q95_latency = env.get_latency()
         env.update_hw_metrics()
-        write_metrics('Latency_Critical', env.get_lc_metrics(), q95_latency)
+        write_metrics(LC_TAG, env.get_lc_metrics(), writer, step)
         step += 1
 
     env.stop_client()
