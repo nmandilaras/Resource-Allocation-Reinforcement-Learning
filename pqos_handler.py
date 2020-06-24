@@ -84,7 +84,7 @@ def get_metrics_random():
 class PqosHandler:
     """Generic class for monitoring"""
 
-    def __init__(self, socket=0, cos_id_hp=0, cos_id_be=1):
+    def __init__(self, socket=0, cos_id_hp=1, cos_id_be=2):
         # self.pqos = Pqos()
         # self.pqos.init(interface)
         self.mon = PqosMon()

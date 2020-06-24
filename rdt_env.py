@@ -223,7 +223,7 @@ class Rdt(gym.Env):
         pass
 
     def stop(self):
-        log.debug('Stopping everything!')
+        log.warning('Stopping everything!')
 
         # stop and remove the be containers
         self.stop_bes()
