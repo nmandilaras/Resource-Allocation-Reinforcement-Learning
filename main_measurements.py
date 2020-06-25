@@ -3,7 +3,7 @@ import logging.config
 from utils.argparser import cmd_parser, config_parser
 from torch.utils.tensorboard import SummaryWriter
 from utils.functions import write_metrics
-from utils.constants import LC_TAG
+from utils.constants import LC_TAG, BE_TAG
 
 step = 0
 
@@ -35,15 +35,26 @@ env.start_bes()
 
 log.info("Num of ways that are going to be statically allocated to BEs: {}".format(args.ways_be))
 
+env.set_association_class(args.ways_be)
 done = False
 try:
     while not done:
+        status = env.poll_bes()
+        log.debug(status)
+        done = all(status)
 
-        next_state, reward, done, info = env.step(args.ways_be)
+        q95_latency = env.get_latency()
+        env.update_hw_metrics()
+        reward = env.reward_func(args.ways_be, q95_latency)
+        ipc_hp, misses_hp, llc_hp, mbl_hp, mbr_hp = env.get_lc_metrics()
+        ipc_be, misses_be, llc_be, mbl_be, mbr_be = env.get_be_metrics()
+
+        write_metrics(LC_TAG, (ipc_hp, misses_hp, llc_hp, mbl_hp, mbr_hp, q95_latency), writer, step)
+        write_metrics(BE_TAG, (ipc_be, misses_be, llc_be, mbl_be, mbr_be, None), writer, step)
+
+        # next_state, reward, done, info = env.step(args.ways_be)
         writer.add_scalar('Agent/Action', args.ways_be, step)
         writer.add_scalar('Agent/Reward', reward, step)
-        for key, value in info.items():
-            write_metrics(key, value, writer, step)
 
         step += 1
 

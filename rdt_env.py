@@ -142,6 +142,9 @@ class Rdt(gym.Env):
     def get_be_metrics(self):
         return self.pqos_handler.get_be_metrics()
 
+    def set_association_class(self, action_be_ways):
+        self.pqos_handler.set_allocation_class(action_be_ways)
+
     def __get_next_state(self, action_be_ways):
         # poll metrics so the next poll will contains deltas from this point just after the action
         self.pqos_handler.update()
@@ -162,7 +165,7 @@ class Rdt(gym.Env):
 
         return state_normalized, info, tail_latency
 
-    def __reward_func(self, action_be_ways, hp_tail_latency):
+    def reward_func(self, action_be_ways, hp_tail_latency):
         """Reward func """
         if hp_tail_latency < self.latency_thr:
             reward = action_be_ways
@@ -203,6 +206,7 @@ class Rdt(gym.Env):
         # err_msg = "%r (%s) invalid" % (action_be_ways, type(action_be_ways))
         # assert self.action_space.contains(action_be_ways), err_msg
 
+        # Does this check cause any problem ?
         if action_be_ways != self.previous_action:  # avoid enforcing decision when nothing changes
             # enforce the decision with PQOS
             self.pqos_handler.set_allocation_class(action_be_ways)
@@ -211,7 +215,7 @@ class Rdt(gym.Env):
 
         state, info, tail_latency = self.__get_next_state(action_be_ways)
 
-        reward = self.__reward_func(action_be_ways, tail_latency)  # based on new metrics
+        reward = self.reward_func(action_be_ways, tail_latency)  # based on new metrics
 
         return state, reward, done, info
 
