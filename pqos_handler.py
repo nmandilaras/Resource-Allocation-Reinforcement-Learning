@@ -64,7 +64,7 @@ def get_event_name(event_type):
 def get_metrics(group_values):
     ipc = group_values.ipc
     misses = group_values.llc_misses_delta
-    llc = bytes_to_kb(group_values.llc)
+    llc = bytes_to_mb(group_values.llc)
     mbl = bytes_to_mb(group_values.mbm_local_delta)
     mbr = bytes_to_mb(group_values.mbm_remote_delta)
 
