@@ -4,6 +4,7 @@ from utils.argparser import cmd_parser, config_parser
 from torch.utils.tensorboard import SummaryWriter
 from utils.functions import write_metrics
 from utils.constants import LC_TAG, BE_TAG
+import time
 
 step = 0
 
@@ -21,6 +22,7 @@ writer = SummaryWriter()
 env = Rdt(config_env)
 
 env.reset_pqos()
+start_time = time.time()
 env.start_client()
 log.debug("Mem client started. Warm up period follows.")
 
@@ -45,12 +47,18 @@ try:
 
         q95_latency = env.get_latency()
         env.update_hw_metrics()
+        end_time = time.time()
+        time_interval = end_time - start_time
+        start_time = end_time
         reward = env.reward_func(args.ways_be, q95_latency)
         ipc_hp, misses_hp, llc_hp, mbl_hp, mbr_hp = env.get_lc_metrics()
         ipc_be, misses_be, llc_be, mbl_be, mbr_be = env.get_be_metrics()
 
-        write_metrics(LC_TAG, (ipc_hp, misses_hp, llc_hp, mbl_hp, mbr_hp, q95_latency), writer, step)
-        write_metrics(BE_TAG, (ipc_be, misses_be, llc_be, mbl_be, mbr_be, None), writer, step)
+        mbl_hp_ps, mbr_hp_ps = mbl_hp / time_interval, mbr_hp / time_interval
+        mbl_be_ps, mbr_be_ps = mbl_be / time_interval, mbr_be / time_interval
+
+        write_metrics(LC_TAG, (ipc_hp, misses_hp, llc_hp, mbl_hp_ps, mbr_hp_ps, q95_latency), writer, step)
+        write_metrics(BE_TAG, (ipc_be, misses_be, llc_be, mbl_be_ps, mbr_be_ps, None), writer, step)
 
         # next_state, reward, done, info = env.step(args.ways_be)
         writer.add_scalar('Agent/Action', args.ways_be, step)
