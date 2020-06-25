@@ -11,6 +11,7 @@ import docker
 import logging.config
 from utils.constants import LC_TAG, BE_TAG
 from utils.config_constants import *
+import time
 
 logging.config.fileConfig('logging.conf')  # TODO path!
 log = logging.getLogger('simpleExample')
@@ -46,8 +47,9 @@ class Rdt(gym.Env):
         # log.debug(cores_loader)
 
         self.action_space = spaces.Discrete(int(config_env[NUM_WAYS]))
+        # latency, misses, bw, ways_be
         self.observation_space = spaces.Box(
-            low=np.array([0, 0, 0, 0]), high=np.array([20, 3 * 1e7, 6 * 1e3, self.action_space.n-1], dtype=np.float32),
+            low=np.array([0, 0, 0, 0]), high=np.array([20, 3 * 1e7, 1e5, self.action_space.n-1], dtype=np.float32),
             dtype=np.float32)
 
         self.mem_client = None
@@ -148,15 +150,21 @@ class Rdt(gym.Env):
     def __get_next_state(self, action_be_ways):
         # poll metrics so the next poll will contains deltas from this point just after the action
         self.pqos_handler.update()
+        start_time = time.time()
         # start the stats record, the recorder will go to sleep and the it 'll send the results
         tail_latency = get_latency()  # NOTE this call will block
 
         self.pqos_handler.update()
+        time_interval = time.time() - start_time
         ipc_hp, misses_hp, llc_hp, mbl_hp, mbr_hp = self.pqos_handler.get_hp_metrics()
         ipc_be, misses_be, llc_be, mbl_be, mbr_be = self.pqos_handler.get_be_metrics()
-        socket_wide_bw = mbl_hp + mbl_be
-        info = {LC_TAG: (ipc_hp, misses_hp, llc_hp, mbl_hp, mbr_hp, tail_latency),
-                BE_TAG: (ipc_be, misses_be, llc_be, mbl_be, mbr_be, None)}
+
+        mbl_hp_ps, mbr_hp_ps = mbl_hp / time_interval, mbr_hp / time_interval
+        mbl_be_ps, mbr_be_ps = mbl_be / time_interval, mbr_be / time_interval
+
+        socket_wide_bw = mbl_hp_ps + mbl_be_ps
+        info = {LC_TAG: (ipc_hp, misses_hp, llc_hp, mbl_hp_ps, mbr_hp_ps, tail_latency),
+                BE_TAG: (ipc_be, misses_be, llc_be, mbl_be_ps, mbr_be_ps, None)}
 
         state = [tail_latency, misses_be, socket_wide_bw, action_be_ways]
 
