@@ -138,11 +138,11 @@ class Rdt(gym.Env):
     def update_hw_metrics(self):
         self.pqos_handler.update()
 
-    def get_lc_metrics(self):  # to be called after update metrics
-        return self.pqos_handler.get_hp_metrics()
+    def get_lc_metrics(self, time_interval):  # to be called after update metrics
+        return self.pqos_handler.get_hp_metrics(time_interval)
 
-    def get_be_metrics(self):
-        return self.pqos_handler.get_be_metrics()
+    def get_be_metrics(self, time_interval):
+        return self.pqos_handler.get_be_metrics(time_interval)
 
     def set_association_class(self, action_be_ways):
         self.pqos_handler.set_allocation_class(action_be_ways)
@@ -156,11 +156,8 @@ class Rdt(gym.Env):
 
         self.pqos_handler.update()
         time_interval = time.time() - start_time
-        ipc_hp, misses_hp, llc_hp, mbl_hp, mbr_hp = self.pqos_handler.get_hp_metrics()
-        ipc_be, misses_be, llc_be, mbl_be, mbr_be = self.pqos_handler.get_be_metrics()
-
-        mbl_hp_ps, mbr_hp_ps = mbl_hp / time_interval, mbr_hp / time_interval
-        mbl_be_ps, mbr_be_ps = mbl_be / time_interval, mbr_be / time_interval
+        ipc_hp, misses_hp, llc_hp, mbl_hp_ps, mbr_hp_ps = self.pqos_handler.get_hp_metrics(time_interval)
+        ipc_be, misses_be, llc_be, mbl_be_ps, mbr_be_ps = self.pqos_handler.get_be_metrics(time_interval)
 
         socket_wide_bw = mbl_hp_ps + mbl_be_ps
         info = {LC_TAG: (ipc_hp, misses_hp, llc_hp, mbl_hp_ps, mbr_hp_ps, tail_latency, rps),

@@ -10,11 +10,11 @@ logging.config.fileConfig('logging.conf')
 log = logging.getLogger('simpleExample')
 
 
-class Stats(ctypes.Structure):
-    _fields_ = [
-        ("q95", ctypes.c_double),
-        ("rps", ctypes.c_double)
-    ]
+# class Stats(ctypes.Structure):
+#     _fields_ = [
+#         ("q95", ctypes.c_double),
+#         ("rps", ctypes.c_double)
+#     ]
 
 
 def get_loader_stats():
@@ -22,14 +22,14 @@ def get_loader_stats():
         s.connect((HOST, PORT))
         s.sendall(b'get q95')
 
-        stats = Stats()
+        # stats = Stats()
         fmt = "dd"
         fmt_size = struct.calcsize(fmt)
         # log.debug('fmt_size:{}'.format(fmt_size))
         data = s.recv(fmt_size)        # this call will block
-        stats.q95, stats.rps = struct.unpack(fmt, data[:fmt_size])
+        q95, rps = struct.unpack(fmt, data[:fmt_size])
 
-    # log.debug('Tail latency q95: {}'.format(stats.q95))
-    # log.debug('RPS: {}'.format(stats.rps))
+    log.debug('Tail latency q95: {}'.format(q95))
+    log.debug('RPS: {}'.format(rps))
 
-    return stats.q95, stats.rps
+    return q95, rps

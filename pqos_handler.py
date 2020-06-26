@@ -61,14 +61,16 @@ def get_event_name(event_type):
     return event_map.get(event_type)
 
 
-def get_metrics(group_values):
+def get_metrics(group_values, time_interval):
     ipc = group_values.ipc
     misses = group_values.llc_misses_delta
     llc = bytes_to_mb(group_values.llc)
     mbl = bytes_to_mb(group_values.mbm_local_delta)
     mbr = bytes_to_mb(group_values.mbm_remote_delta)
 
-    return ipc, misses, llc, mbl, mbr
+    mbl_ps, mbr_ps = mbl / time_interval, mbr / time_interval
+
+    return ipc, misses, llc, mbl_ps, mbr_ps
 
 
 def get_metrics_random():
@@ -151,11 +153,11 @@ class PqosHandler:
 
         self.mon.poll([self.group_hp, self.group_be])
 
-    def get_hp_metrics(self):
-        return get_metrics(self.group_hp.values)
+    def get_hp_metrics(self, time_interval):
+        return get_metrics(self.group_hp.values, time_interval)
 
-    def get_be_metrics(self):
-        return get_metrics(self.group_be.values)
+    def get_be_metrics(self, time_interval):
+        return get_metrics(self.group_be.values, time_interval)
 
     # def get_hw_metrics(self):
     #     """Prints current values for monitored events."""
@@ -362,10 +364,10 @@ class PqosHandlerMock(PqosHandler):
     def update(self):
         pass
 
-    def get_hp_metrics(self):
+    def get_hp_metrics(self, time_interval):
         return get_metrics_random()
 
-    def get_be_metrics(self):
+    def get_be_metrics(self, time_interval):
         return get_metrics_random()
 
     # def get_hw_metrics(self):

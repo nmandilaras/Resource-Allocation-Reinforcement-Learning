@@ -6,7 +6,22 @@ from utils.functions import write_metrics
 from utils.constants import LC_TAG, BE_TAG
 import time
 
+
+def monitor_warm_up():
+    global step, start_time
+    for i in range(args.warm_up):
+        q95_latency, rps = env.get_loader_stats()
+        env.update_hw_metrics()
+        end_time = time.time()
+        time_interval = end_time - start_time
+        start_time = end_time
+        ipc_hp, misses_hp, llc_hp, mbl_hp_ps, mbr_hp_ps = env.get_lc_metrics(time_interval)
+        write_metrics(LC_TAG, (ipc_hp, misses_hp, llc_hp, mbl_hp_ps, mbr_hp_ps, q95_latency, rps), writer, step)
+        step += 1
+
+
 step = 0
+
 
 parser = cmd_parser()
 parser.add_argument('--warm-up', type=int, default=0, help='Time to collect metrics before/after bes execution')
@@ -28,11 +43,7 @@ try:
     log.debug("Mem client started. Warm up period follows.")
 
     # collect tail latency and hw metrics before launching be
-    for i in range(args.warm_up):
-        q95_latency, rps = env.get_loader_stats()
-        env.update_hw_metrics()
-        write_metrics(LC_TAG, env.get_lc_metrics(), writer, step)  # TODO fix this, latency and rps are not logged
-        step += 1
+    monitor_warm_up()
 
     env.start_bes()
 
@@ -52,11 +63,8 @@ try:
         time_interval = end_time - start_time
         start_time = end_time
         reward = env.reward_func(args.ways_be, q95_latency)
-        ipc_hp, misses_hp, llc_hp, mbl_hp, mbr_hp = env.get_lc_metrics()
-        ipc_be, misses_be, llc_be, mbl_be, mbr_be = env.get_be_metrics()
-
-        mbl_hp_ps, mbr_hp_ps = mbl_hp / time_interval, mbr_hp / time_interval
-        mbl_be_ps, mbr_be_ps = mbl_be / time_interval, mbr_be / time_interval
+        ipc_hp, misses_hp, llc_hp, mbl_hp_ps, mbr_hp_ps = env.get_lc_metrics(time_interval)
+        ipc_be, misses_be, llc_be, mbl_be_ps, mbr_be_ps = env.get_be_metrics(time_interval)
 
         write_metrics(LC_TAG, (ipc_hp, misses_hp, llc_hp, mbl_hp_ps, mbr_hp_ps, q95_latency, rps), writer, step)
         write_metrics(BE_TAG, (ipc_be, misses_be, llc_be, mbl_be_ps, mbr_be_ps, None), writer, step)
@@ -72,11 +80,7 @@ try:
 finally:
     env.stop_bes()
 
-    for i in range(args.warm_up):
-        q95_latency, rps = env.get_loader_stats()
-        env.update_hw_metrics()
-        write_metrics(LC_TAG, env.get_lc_metrics(), writer, step)
-        step += 1
+    monitor_warm_up()
 
     env.stop_client()
     env.stop_pqos()
