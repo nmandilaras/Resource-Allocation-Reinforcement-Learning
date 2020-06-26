@@ -1,7 +1,7 @@
 import numpy as np
 from utils import constants
 import matplotlib.pyplot as plt
-from utils.constants import LC_TAG
+from utils.constants import metric_names
 import re
 
 
@@ -51,16 +51,19 @@ def check_termination(eval_durations):
 
 
 def write_metrics(tag, metrics, writer, step):
-    ipc, misses, llc, mbl, mbr, latency = metrics
+    # ipc, misses, llc, mbl, mbr, latency = metrics
     header = '{}/'.format(tag)
-    if tag == LC_TAG:
-        writer.add_scalar(header + 'Latency', latency, step)
-
-    writer.add_scalar(header + 'IPC', ipc, step)
-    writer.add_scalar(header + 'Misses', misses, step)
-    writer.add_scalar(header + 'LLC', llc, step)
-    writer.add_scalar(header + 'MBL', mbl, step)
-    writer.add_scalar(header + 'MBR', mbr, step)
+    for metric, metric_name in zip(metrics, metric_names):
+        if metric is not None:
+            writer.add_scalar(header + metric_name, metric, step)
+    # if tag == LC_TAG:
+    #     writer.add_scalar(header + 'Latency', latency, step)
+    #
+    # writer.add_scalar(header + 'IPC', ipc, step)
+    # writer.add_scalar(header + 'Misses', misses, step)
+    # writer.add_scalar(header + 'LLC', llc, step)
+    # writer.add_scalar(header + 'MBL', mbl, step)
+    # writer.add_scalar(header + 'MBR', mbr, step)
     writer.flush()
 
 # use to log latency with this

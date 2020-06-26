@@ -1,5 +1,6 @@
 import socket
 import struct
+import ctypes
 import logging.config
 
 HOST = '127.0.0.1'  # The server's hostname or IP address
@@ -9,13 +10,26 @@ logging.config.fileConfig('logging.conf')
 log = logging.getLogger('simpleExample')
 
 
-def get_latency():
+class Stats(ctypes.Structure):
+    _fields_ = [
+        ("q95", ctypes.c_double),
+        ("rps", ctypes.c_double)
+    ]
+
+
+def get_loader_stats():
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:  # use unix sockets?
         s.connect((HOST, PORT))
         s.sendall(b'get q95')
-        data = s.recv(8)
-        q95 = struct.unpack("d", data)[0]
 
-    # log.debug('Tail latency q95: {}'.format(q95))
+        stats = Stats()
+        fmt = "dd"
+        fmt_size = struct.calcsize(fmt)
+        # log.debug('fmt_size:{}'.format(fmt_size))
+        data = s.recv(fmt_size)        # this call will block
+        stats.q95, stats.rps = struct.unpack(fmt, data[:fmt_size])
 
-    return q95
+    # log.debug('Tail latency q95: {}'.format(stats.q95))
+    # log.debug('RPS: {}'.format(stats.rps))
+
+    return stats.q95, stats.rps

@@ -25,6 +25,8 @@ TERM_INTERVAL = 100 // EVAL_INTERVAL
 LC_TAG = "Latency Critical"
 BE_TAG = "Best Effort"
 
+metric_names = ['IPC', 'Misses', 'LLC', 'MBL', 'MBR', 'Latency', 'RPS']
+
 
 class RLAlgorithms(Enum):
     Q_LEARNING = '0'

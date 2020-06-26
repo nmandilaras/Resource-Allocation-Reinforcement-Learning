@@ -1,7 +1,7 @@
 import gym
 from time import sleep
 from gym import spaces
-from communication import get_latency
+from communication import get_loader_stats
 from pqos import Pqos
 from pqos_handler import PqosHandlerCore, PqosHandlerPid, PqosHandlerMock
 from utils.functions import parse_num_list
@@ -132,8 +132,8 @@ class Rdt(gym.Env):
             container_be.remove()
 
     @staticmethod
-    def get_latency():
-        return get_latency()
+    def get_loader_stats():
+        return get_loader_stats()
 
     def update_hw_metrics(self):
         self.pqos_handler.update()
@@ -152,7 +152,7 @@ class Rdt(gym.Env):
         self.pqos_handler.update()
         start_time = time.time()
         # start the stats record, the recorder will go to sleep and the it 'll send the results
-        tail_latency = get_latency()  # NOTE this call will block
+        tail_latency, rps = get_loader_stats()  # NOTE this call will block
 
         self.pqos_handler.update()
         time_interval = time.time() - start_time
@@ -163,8 +163,8 @@ class Rdt(gym.Env):
         mbl_be_ps, mbr_be_ps = mbl_be / time_interval, mbr_be / time_interval
 
         socket_wide_bw = mbl_hp_ps + mbl_be_ps
-        info = {LC_TAG: (ipc_hp, misses_hp, llc_hp, mbl_hp_ps, mbr_hp_ps, tail_latency),
-                BE_TAG: (ipc_be, misses_be, llc_be, mbl_be_ps, mbr_be_ps, None)}
+        info = {LC_TAG: (ipc_hp, misses_hp, llc_hp, mbl_hp_ps, mbr_hp_ps, tail_latency, rps),
+                BE_TAG: (ipc_be, misses_be, llc_be, mbl_be_ps, mbr_be_ps, None, None)}
 
         state = [tail_latency, misses_be, socket_wide_bw, action_be_ways]
 
