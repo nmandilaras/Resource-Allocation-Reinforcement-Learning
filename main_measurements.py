@@ -55,7 +55,7 @@ try:
     while not done:
         status = env.poll_bes()
         log.debug(status)
-        done = all(status)
+        done = any(status)
 
         q95_latency, rps = env.get_loader_stats()
         env.update_hw_metrics()

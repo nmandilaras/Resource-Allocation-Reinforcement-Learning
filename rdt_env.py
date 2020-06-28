@@ -86,7 +86,7 @@ class Rdt(gym.Env):
         dataset = '{}/twitter_dataset/twitter_dataset_30x'.format(self.loader_dir)
         servers = '{}/docker_servers.txt'.format(self.loader_dir)
         self.mem_client = subprocess.Popen(['taskset', '--cpu-list', self.cores_loader, loader, '-a',
-                                            dataset, '-s', servers, '-g', self.ratio, '-c', '200', '-e', '-w',
+                                            dataset, '-s', servers, '-g', self.ratio, '-c', '200', '-w',
                                             self.loader_threads, '-T', self.action_interval, '-r', str(self.rps)])
         sleep(10)  # wait in order to bind the socket
 
@@ -206,7 +206,7 @@ class Rdt(gym.Env):
         log.debug("Action selected: {}".format(action_be_ways))
         status = self.poll_bes()
         log.debug(status)
-        done = all(status)
+        done = any(status)
 
         # err_msg = "%r (%s) invalid" % (action_be_ways, type(action_be_ways))
         # assert self.action_space.contains(action_be_ways), err_msg
