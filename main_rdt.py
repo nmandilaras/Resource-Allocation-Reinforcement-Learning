@@ -12,6 +12,7 @@ from agents.dqn_agents import DQNAgent, DoubleDQNAgent
 from torch.utils.tensorboard import SummaryWriter
 from utils.config_constants import *
 from utils.functions import write_metrics
+from utils.constants import EPS_END
 
 
 def log_net(net, net_name, step):
@@ -61,6 +62,8 @@ agent = DoubleDQNAgent(num_of_actions, network, criterion, optimizer, gamma=gamm
 done = False
 step = 0
 total_reward = 0
+end_exploration_step = 0
+end_exploration_flag = False
 
 try:
     state = env.reset()
@@ -70,8 +73,13 @@ try:
         action = agent.choose_action(state)
         next_state, reward, done, info = env.step(action)
         next_state = np.float32(next_state)
-        memory.push(state, action, next_state, reward, done)  # Store the transition in memory
+        memory.store(state, action, next_state, reward, done)  # Store the transition in memory
         state = next_state
+
+        if agent.epsilon < EPS_END + 0.005 and not end_exploration_flag:
+            env.violations = 0
+            end_exploration_step = step
+            end_exploration_flag = True
 
         step += 1
         total_reward += reward
@@ -97,7 +105,8 @@ try:
     log.info("Be finished")
     writer.add_graph(agent.policy_net, torch.tensor(state, device=agent.device))
     writer.add_hparams({'lr': lr, 'gamma': gamma, 'HL Dims': str(layers_dim), 'Target_upd_interval': target_update,
-                        'Batch Size': batch_size}, {'violations': env.violations / step, 'slow_down': env.interval_bes})
+                        'Batch Size': batch_size}, {'violations': env.violations / (step - end_exploration_step),
+                                                    'slow_down': env.interval_bes})
 finally:
     writer.flush()
     writer.close()

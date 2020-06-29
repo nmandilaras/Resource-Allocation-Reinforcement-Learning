@@ -16,7 +16,7 @@ max_episodes = 500
 max_steps = 195
 
 EPS_START = 1.0
-EPS_END = 0.01
+EPS_END = 0
 EPS_DECAY = 0.0005  # drops to min around 100 episodes
 
 EVAL_INTERVAL = 10
