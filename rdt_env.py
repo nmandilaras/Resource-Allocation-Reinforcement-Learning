@@ -34,6 +34,7 @@ class Rdt(gym.Env):
         self.loader_dir = config_env[LOADER_DIR]
         self.rps = int(config_env[LOADER_RPS])
         self.loader_threads = config_env[LOADER_THREADS]
+        self.loader_conn = config_env[LOADER_CONN]
         self.action_interval = config_env[ACTION_INTERVAL]
         self.pqos_interface = config_env[PQOS_INTERFACE]
         self.be_name = config_env[BE_NAME]
@@ -90,7 +91,7 @@ class Rdt(gym.Env):
         dataset = '{}/twitter_dataset/twitter_dataset_30x'.format(self.loader_dir)
         servers = '{}/docker_servers.txt'.format(self.loader_dir)
         self.mem_client = subprocess.Popen(['taskset', '--cpu-list', self.cores_loader, loader, '-a',
-                                            dataset, '-s', servers, '-g', self.ratio, '-c', '200', '-w',
+                                            dataset, '-s', servers, '-g', self.ratio, '-c', self.loader_conn, '-w',
                                             self.loader_threads, '-T', self.action_interval, '-r', str(self.rps)])
         sleep(10)  # wait in order to bind the socket
 
