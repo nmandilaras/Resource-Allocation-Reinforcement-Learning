@@ -78,19 +78,19 @@ for i_episode in range(constants.max_episodes):
     total_loss = 0
     while not done:
         episode_duration += 1
-        if not train:
-            env.render()
+        # if not train:
+        #     env.render()
         action = agent.choose_action(state, train=train)
         next_state, reward, done, _ = env.step(action)  # maybe training can run in parallel with sleep
         next_state = np.float32(next_state)
-        memory.push(state, action, next_state, reward, done)  # Store the transition in memory
+        memory.store(state, action, next_state, reward, done)  # Store the transition in memory
         state = next_state
         episode_reward += reward
 
         if train:
             steps_done += 1
             try:
-                transitions = memory.sample(BATCH_SIZE)
+                transitions, indices, is_weights = memory.sample(BATCH_SIZE)
             except ValueError:
                 continue
             total_loss += agent.update(transitions)  # Perform one step of the optimization (on the policy network)
@@ -129,7 +129,8 @@ for i_episode in range(constants.max_episodes):
     epsilon.append(agent.epsilon)
     # plot_epsilon(epsilon)
     if constants.TENSORBOARD:
-        writer.add_scalar('Epsilon', agent.epsilon, i_episode)
+        writer.add_scalar('Overview/Epsilon', agent.epsilon, i_episode)
+        writer.add_scalar('Overview/Steps', steps_done, i_episode)
         writer.flush()
 
 else:

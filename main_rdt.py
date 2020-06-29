@@ -84,7 +84,7 @@ try:
         step += 1
         total_reward += reward
         try:
-            transitions = memory.sample(batch_size)
+            transitions, _, _ = memory.sample(batch_size)
         except ValueError:
             continue
         loss = agent.update(transitions)  # Perform one step of the optimization (on the policy network)

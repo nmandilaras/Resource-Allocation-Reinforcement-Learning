@@ -7,8 +7,8 @@ class Memory:  # stored as ( s, a, r, s_ ) in SumTree
     This SumTree code is modified version and the original code is from:
     https://github.com/jaara/AI-blog/blob/master/Seaquest-DDQN-PER.py
     """
-    PER_e = 0.01  # Hyperparameter that we use to avoid some experiences to have 0 probability of being taken
-    PER_a = 0.6  # Hyperparameter that we use to make a tradeoff between taking only exp with high priority and sampling randomly
+    PER_e = 0.01  # Hyperparam that we use to avoid some experiences to have 0 probability of being taken
+    PER_a = 0.6  # Hyperparam that sets a tradeoff between taking only exp with high priority and sampling randomly
     PER_b = 0.4  # importance-sampling, from initial value increasing to 1
 
     PER_b_increment_per_sampling = 0.001
@@ -25,7 +25,7 @@ class Memory:  # stored as ( s, a, r, s_ ) in SumTree
         """
         self.tree = SumTree(capacity)
 
-    def store(self, experience):  # πως τα αποθηκεύουμε γιατί έχουμε και τα Transition εμεις
+    def store(self, experience):
         """
         Store a new experience in our tree
         Each new experience have a score of max_prority (it will be then improved when we use this exp to train our DDQN)
@@ -48,11 +48,6 @@ class Memory:  # stored as ( s, a, r, s_ ) in SumTree
         - We search in the sumtree, the experience where priority score correspond to sample values are retrieved from.
         - Then, we calculate IS weights for each minibatch element
         """
-        # Create a sample array that will contains the minibatch
-        memory_b = []
-
-        b_idx = np.empty((n,), dtype=np.int32)  # in np.empty values are not set to zero
-        b_ISWeights = np.empty((n, 1), dtype=np.float32)
 
         # Calculate the priority segment
         # Here, as explained in the paper, we divide the Range[0, ptotal] into n ranges
@@ -61,42 +56,20 @@ class Memory:  # stored as ( s, a, r, s_ ) in SumTree
         # Here we increasing the PER_b each time we sample a new minibatch
         self.PER_b = np.min([1., self.PER_b + self.PER_b_increment_per_sampling])  # max = 1
 
-        # Calculating the max_weight
-        p_min = np.min(self.tree.tree[-self.tree.capacity:]) / self.tree.total_priority
-        max_weight = (p_min * n) ** (-self.PER_b)
+        values = [self.tree.get_leaf(np.random.uniform(priority_segment * i, priority_segment * (i + 1))) for i in range(n)]
+        indices, priorities, transitions = zip(*values)
+        sampling_probabilities = priorities / self.tree.total_priority
+        is_weights = np.power(self.tree.n_entries * sampling_probabilities, -self.PER_b)
+        is_weights /= is_weights.max()
 
-        for i in range(n):
-            """
-            A value is uniformly sample from each range
-            """
-            a, b = priority_segment * i, priority_segment * (i + 1)
-            value = np.random.uniform(a, b)
-
-            """
-            Experience that correspond to each value is retrieved
-            """
-            index, priority, data = self.tree.get_leaf(value)
-
-            # P(j)
-            sampling_probabilities = priority / self.tree.total_priority
-
-            #  IS = (1/N * 1/P(i))**b /max wi == (N*P(i))**-b  /max wi
-            b_ISWeights[i, 0] = np.power(n * sampling_probabilities, -self.PER_b) / max_weight
-
-            b_idx[i] = index
-
-            experience = [data]
-
-            memory_b.append(experience)
-
-        return b_idx, memory_b, b_ISWeights
+        return transitions, indices, is_weights
 
     def batch_update(self, tree_idx, abs_errors):
         """
         Update the priorities on the tree. Data on memory don't change.
         """
         abs_errors += self.PER_e  # convert to abs and avoid 0
-        clipped_errors = np.minimum(abs_errors, self.absolute_error_upper)
+        clipped_errors = np.minimum(abs_errors, self.absolute_error_upper)  # not present in other implementation
         ps = np.power(clipped_errors, self.PER_a)
 
         for ti, p in zip(tree_idx, ps):

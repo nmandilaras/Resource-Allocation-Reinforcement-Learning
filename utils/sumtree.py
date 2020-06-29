@@ -20,6 +20,7 @@ class SumTree(object):
         # Parent nodes = capacity - 1
         # Leaf nodes = capacity
         self.tree = np.zeros(2 * capacity - 1)
+        self.n_entries = 0
 
         """ tree:
             0
@@ -59,6 +60,10 @@ tree_index  0 0  0  We fill the leaves from left to right
 
         if self.data_pointer >= self.capacity:  # If we're above the capacity, you go back to first index (we overwrite)
             self.data_pointer = 0
+
+        # update number of elements in the tree until it's full
+        if self.n_entries < self.capacity:
+            self.n_entries += 1
 
     def update(self, tree_index, priority):
         """

@@ -32,7 +32,7 @@ class TestRL(unittest.TestCase):
     agent = DQNAgent(num_of_actions, network, criterion, optimizer, mem_size)
 
     def test_Memory(self):
-        self.memory.push(1, 2, 3, 4, 5)
+        self.memory.store(1, 2, 3, 4, 5)
         state, action, next_state, reward, done = self.memory.sample(1)[0]
         print(state, action, next_state, reward, done)
         print(str(ClassicDQN))
@@ -57,7 +57,7 @@ class TestRL(unittest.TestCase):
             action = self.env.action_space.sample()
             next_state, reward, done, _ = self.env.step(action)
             next_state = np.float32(next_state)
-            self.memory.push(state, action, next_state, reward, done)
+            self.memory.store(state, action, next_state, reward, done)
 
         transitions = self.memory.sample(BATCH_SIZE)
 
