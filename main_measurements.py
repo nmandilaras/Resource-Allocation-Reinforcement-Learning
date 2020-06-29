@@ -4,6 +4,7 @@ from utils.argparser import cmd_parser, config_parser
 from torch.utils.tensorboard import SummaryWriter
 from utils.functions import write_metrics
 from utils.constants import LC_TAG, BE_TAG
+from utils.config_constants import *
 import time
 
 
@@ -32,7 +33,8 @@ config_env, config_agent, config_misc = config_parser(args.config_file)
 logging.config.fileConfig('logging.conf')
 log = logging.getLogger('simpleExample')
 
-writer = SummaryWriter()
+comment = "_measurement_{}_action_{}".format(config_env[BE_NAME], args.ways_be)
+writer = SummaryWriter(comment=comment)
 
 env = Rdt(config_env)
 
@@ -53,9 +55,7 @@ try:
     done = False
 
     while not done:
-        status = env.poll_bes()
-        log.debug(status)
-        done = any(status)
+        done = env.determine_termination()
 
         q95_latency, rps = env.get_loader_stats()
         env.update_hw_metrics()
@@ -76,11 +76,16 @@ try:
         step += 1
 
     log.info("Be finished")
+    writer.add_hparams({'Action': args.ways_be, 'RPS': config_env[LOADER_RPS]},
+                       {'violations': env.violations / step, 'slow_down': env.interval_bes})
+    writer.flush()
 
 finally:
     env.stop_bes()
 
     monitor_warm_up()
 
+    writer.flush()
+    writer.close()
     env.stop_client()
     env.stop_pqos()

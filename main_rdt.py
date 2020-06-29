@@ -29,7 +29,8 @@ config_env, config_agent, config_misc = config_parser(args.config_file)
 logging.config.fileConfig('logging.conf')
 log = logging.getLogger('simpleExample')
 
-writer = SummaryWriter()
+comment = "_{}".format(config_env[BE_NAME])
+writer = SummaryWriter(comment=comment)
 
 env = Rdt(config_env)
 
@@ -59,6 +60,7 @@ agent = DoubleDQNAgent(num_of_actions, network, criterion, optimizer, gamma=gamm
 
 done = False
 step = 0
+total_reward = 0
 
 try:
     state = env.reset()
@@ -72,6 +74,7 @@ try:
         state = next_state
 
         step += 1
+        total_reward += reward
         try:
             transitions = memory.sample(batch_size)
         except ValueError:
@@ -94,7 +97,8 @@ try:
     log.info("Be finished")
     writer.add_graph(agent.policy_net, torch.tensor(state, device=agent.device))
     writer.add_hparams({'lr': lr, 'gamma': gamma, 'HL Dims': str(layers_dim), 'Target_upd_interval': target_update,
-                        'Batch Size': batch_size}, {})
-    writer.flush()
+                        'Batch Size': batch_size}, {'violations': env.violations / step, 'slow_down': env.interval_bes})
 finally:
+    writer.flush()
+    writer.close()
     env.stop()

@@ -42,6 +42,10 @@ class Rdt(gym.Env):
         self.container_bes = []
         cores_pid_hp_range = parse_num_list(config_env[CORES_LC])
         self.cores_pids_be_range = parse_num_list(self.cores_pids_be)
+        self.violations = 0  # calculate violations
+        self.start_time_bes = None
+        self.stop_time_bes = None
+        self.interval_bes = None
         # log.debug(cores_pid_hp_range)
         # log.debug(self.cores_pids_be_range)
         # log.debug(cores_loader)
@@ -115,6 +119,8 @@ class Rdt(gym.Env):
             for container_be in self.container_bes:
                 container_be.restart()
 
+        self.start_time_bes = time.time()
+
     def poll_bes(self):
         status = []
         for container_be in self.container_bes:
@@ -130,6 +136,16 @@ class Rdt(gym.Env):
         for container_be in self.container_bes:
             container_be.stop()
             container_be.remove()
+
+    def determine_termination(self):
+        status = self.poll_bes()
+        log.debug(status)
+        done = any(status)
+        if done:
+            self.stop_time_bes = time.time()
+            self.interval_bes = self.stop_time_bes - self.start_time_bes
+
+        return done
 
     @staticmethod
     def get_loader_stats():
@@ -152,7 +168,7 @@ class Rdt(gym.Env):
         self.pqos_handler.update()
         start_time = time.time()
         # start the stats record, the recorder will go to sleep and the it 'll send the results
-        tail_latency, rps = get_loader_stats()  # NOTE this call will block
+        tail_latency, rps = self.get_loader_stats()  # NOTE this call will block
 
         self.pqos_handler.update()
         time_interval = time.time() - start_time
@@ -178,6 +194,7 @@ class Rdt(gym.Env):
             # depended by the LLC ways that are allocated to them at any point of their execution
         else:
             reward = - 2 * self.action_space.n
+            self.violations += 1
         return reward
 
     def reset(self):
@@ -204,9 +221,7 @@ class Rdt(gym.Env):
         """ At each step the agent specifies the number of ways that are assigned to the be"""
 
         log.debug("Action selected: {}".format(action_be_ways))
-        status = self.poll_bes()
-        log.debug(status)
-        done = any(status)
+        done = self.determine_termination()
 
         # err_msg = "%r (%s) invalid" % (action_be_ways, type(action_be_ways))
         # assert self.action_space.contains(action_be_ways), err_msg
