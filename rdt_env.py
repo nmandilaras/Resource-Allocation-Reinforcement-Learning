@@ -46,7 +46,7 @@ class Rdt(gym.Env):
         self.violations = 0  # calculate violations
         self.start_time_bes = None
         self.stop_time_bes = None
-        self.interval_bes = None
+        self.interval_bes = None  # in minutes
         # log.debug(cores_pid_hp_range)
         # log.debug(self.cores_pids_be_range)
         # log.debug(cores_loader)
@@ -144,7 +144,7 @@ class Rdt(gym.Env):
         done = any(status)
         if done:
             self.stop_time_bes = time.time()
-            self.interval_bes = self.stop_time_bes - self.start_time_bes
+            self.interval_bes = (self.stop_time_bes - self.start_time_bes) / 60
 
         return done
 
