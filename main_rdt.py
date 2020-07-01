@@ -7,7 +7,7 @@ import logging.config
 from utils.argparser import cmd_parser, config_parser
 from nn.policy_fc import PolicyFC
 from nn.dqn_archs import ClassicDQN, Dueling
-from utils.memory import Memory
+from utils.memory import Memory, MemoryPER
 from agents.dqn_agents import DQNAgent, DoubleDQNAgent
 from torch.utils.tensorboard import SummaryWriter
 from utils.config_constants import *
@@ -30,7 +30,7 @@ config_env, config_agent, config_misc = config_parser(args.config_file)
 logging.config.fileConfig('logging.conf')
 log = logging.getLogger('simpleExample')
 
-comment = "_{}".format(config_env[BE_NAME])
+comment = "_{}_{}".format(config_env[BE_NAME], args.comment)
 writer = SummaryWriter(comment=comment)
 
 env = Rdt(config_env)
@@ -46,6 +46,7 @@ layers_dim = ast.literal_eval(config_agent[LAYERS_DIM])
 target_update = int(config_agent[TARGET_UPDATE])  # target net is updated with the weights of policy net every x updates
 batch_size = int(config_agent[BATCH_SIZE])
 gamma = float(config_agent[GAMMA])
+mem_per = bool(config_agent[MEM_PER])
 mem_size = int(config_agent[MEM_SIZE])
 
 dqn_arch = Dueling
@@ -53,9 +54,12 @@ network = PolicyFC(num_of_observations, layers_dim, num_of_actions, dqn_arch, dr
 
 log.info("Number of parameters in our model: {}".format(sum(x.numel() for x in network.parameters())))
 
-criterion = torch.nn.MSELoss()  # torch.nn.SmoothL1Loss()  # Huber loss
+criterion = torch.nn.MSELoss(reduction='none')  # torch.nn.SmoothL1Loss()  # Huber loss
 optimizer = optim.Adam(network.parameters(), lr)
-memory = Memory(mem_size)
+if mem_per:
+    memory = MemoryPER(mem_size)
+else:
+    memory = Memory(mem_size)
 
 agent = DoubleDQNAgent(num_of_actions, network, criterion, optimizer, gamma=gamma)
 
@@ -84,11 +88,12 @@ try:
         step += 1
         total_reward += reward
         try:
-            transitions, _, _ = memory.sample(batch_size)
+            transitions, indices, is_weights = memory.sample(batch_size)
         except ValueError:
             continue
-        loss = agent.update(transitions)  # Perform one step of the optimization (on the policy network)
+        loss, errors = agent.update(transitions, is_weights)  # Perform one step of optimization on the policy net
         agent.adjust_exploration(step)  # rate is updated at every step - taken from the tutorial
+        memory.batch_update(indices, errors)
         if step % target_update == 0:  # Update the target network, had crucial impact
             agent.update_target_net()
             log_net(agent.target_net, 'TargetNet', step)
