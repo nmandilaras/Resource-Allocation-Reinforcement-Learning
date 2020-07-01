@@ -32,8 +32,9 @@ class DQNAgent(Agent):
                 # we change max(1) to max(0) since we have only one element in this forward pass
                 return self.policy_net(state).max(0)[1].item()
 
-    def update(self, transitions):
+    def update(self, transitions, is_weights=None):
         """
+        :param is_weights:
         :param transitions: a list whose elements are transitions
         """
 
@@ -50,7 +51,12 @@ class DQNAgent(Agent):
         # Compute the expected Q values
         expected_q_values = reward + (1 - done.int()) * self.gamma * next_state_values
         # we want to take into account next states' values only if they are not final states
-        loss = self.criterion(predicted_q_values.squeeze(1), expected_q_values.detach())
+        pred = predicted_q_values.squeeze(1)
+        target = expected_q_values.detach()
+        loss = self.criterion(pred, target)
+        if is_weights is not None:
+            loss = torch.tensor(is_weights, device=self.device) * loss
+        loss = loss.mean()
 
         self.optimizer.zero_grad()
         loss.backward()  # computes gradients
@@ -59,8 +65,9 @@ class DQNAgent(Agent):
         #     param.grad.data.clamp_(-1, 1)           # but the paper applies this to the loss
         self.optimizer.step()  # updates weights
         # self.scheduler.step(loss)  # dynamicaly change the lr
+        errors = torch.abs(pred - target).data.numpy()
 
-        return loss
+        return loss, errors
 
     def _calc_expected_q(self, next_state):
         next_state_values = self.target_net(next_state).max(1)[0]

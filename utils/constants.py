@@ -15,9 +15,10 @@ TENSORBOARD = True
 max_episodes = 500
 max_steps = 195
 
+# epsilon
 EPS_START = 1.0
 EPS_END = 0
-EPS_DECAY = 0.0005  # drops to min around 100 episodes
+EPS_DECAY = 0.001  # drops to min around 100 episodes # 0.0005
 
 EVAL_INTERVAL = 10
 TERM_INTERVAL = 100 // EVAL_INTERVAL

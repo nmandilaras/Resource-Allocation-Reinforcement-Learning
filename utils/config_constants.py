@@ -21,5 +21,6 @@ TARGET_UPDATE = 'target_update'
 BATCH_SIZE = 'batch_size'
 GAMMA = 'gamma'
 MEM_SIZE = 'mem_size'
+MEM_PER = 'mem_per'
 
 # misc

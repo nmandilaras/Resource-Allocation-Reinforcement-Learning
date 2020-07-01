@@ -20,6 +20,7 @@ layers_dim = [24, 48]
 target_update = 100
 batch_size = 32
 gamma = 0.99
-mem_size = 100000
+mem_size = 10_000
+mem_per = False
 
 [misc]
