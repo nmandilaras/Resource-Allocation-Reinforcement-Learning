@@ -110,8 +110,8 @@ try:
     log.info("Be finished")
     writer.add_graph(agent.policy_net, torch.tensor(state, device=agent.device))
     writer.add_hparams({'lr': lr, 'gamma': gamma, 'HL Dims': str(layers_dim), 'Target_upd_interval': target_update,
-                        'Batch Size': batch_size}, {'violations': env.violations / (step - end_exploration_step),
-                                                    'slow_down': env.interval_bes})
+                        'Batch Size': batch_size, 'Mem PER': mem_per, 'Mem Size': mem_size},
+                       {'violations': env.violations / (step - end_exploration_step), 'slow_down': env.interval_bes})
 finally:
     writer.flush()
     writer.close()
