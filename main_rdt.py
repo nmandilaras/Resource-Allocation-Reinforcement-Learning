@@ -46,26 +46,37 @@ layers_dim = ast.literal_eval(config_agent[LAYERS_DIM])
 target_update = int(config_agent[TARGET_UPDATE])  # target net is updated with the weights of policy net every x updates
 batch_size = int(config_agent[BATCH_SIZE])
 gamma = float(config_agent[GAMMA])
-mem_per = bool(config_agent[MEM_PER])
+arch = config_agent[ARCH]  # Classic and Dueling DQN architectures are supported
+algo = config_agent[ALGO]  # DDQN or DQN
+mem_type = config_agent[MEM_PER]
 mem_size = int(config_agent[MEM_SIZE])
 
-dqn_arch = Dueling
+if arch:
+    dqn_arch = Dueling
+else:
+    dqn_arch = ClassicDQN
+
 network = PolicyFC(num_of_observations, layers_dim, num_of_actions, dqn_arch, dropout=0)
 
 log.info("Number of parameters in our model: {}".format(sum(x.numel() for x in network.parameters())))
 
 criterion = torch.nn.MSELoss(reduction='none')  # torch.nn.SmoothL1Loss()  # Huber loss
 optimizer = optim.Adam(network.parameters(), lr)
-if mem_per:
+
+if mem_type == 'per':
     memory = MemoryPER(mem_size)
 else:
     memory = Memory(mem_size)
 
-agent = DoubleDQNAgent(num_of_actions, network, criterion, optimizer, gamma=gamma)
+if algo == 'double':
+    agent = DoubleDQNAgent(num_of_actions, network, criterion, optimizer, gamma=gamma)
+else:
+    agent = DQNAgent(num_of_actions, network, criterion, optimizer, gamma=gamma)
 
 done = False
 step = 0
 total_reward = 0
+exploration_viol = 0
 end_exploration_step = 0
 end_exploration_flag = False
 
@@ -80,9 +91,11 @@ try:
         memory.store(state, action, next_state, reward, done)  # Store the transition in memory
         state = next_state
 
-        if agent.epsilon < EPS_END + 0.005 and not end_exploration_flag:
+        if agent.epsilon < EPS_END + 0.01 and not end_exploration_flag:
+            exploration_viol = env.violations
             env.violations = 0
             end_exploration_step = step
+            log.info("Conventional end of exploration")
             end_exploration_flag = True
 
         step += 1
@@ -110,8 +123,11 @@ try:
     log.info("Be finished")
     writer.add_graph(agent.policy_net, torch.tensor(state, device=agent.device))
     writer.add_hparams({'lr': lr, 'gamma': gamma, 'HL Dims': str(layers_dim), 'Target_upd_interval': target_update,
-                        'Batch Size': batch_size, 'Mem PER': mem_per, 'Mem Size': mem_size},
-                       {'violations': env.violations / (step - end_exploration_step), 'slow_down': env.interval_bes})
+                         'Double': algo, 'Dueling': arch, 'Batch Size': batch_size, 'Mem PER': mem_type,
+                        'Mem Size': mem_size},
+                       {'violations': env.violations / (step - end_exploration_step),
+                        'violations_total': (env.violations + exploration_viol) / step,
+                        'slow_down': env.interval_bes})
 finally:
     writer.flush()
     writer.close()

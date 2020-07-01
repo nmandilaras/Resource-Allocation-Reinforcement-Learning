@@ -8,7 +8,7 @@ from agents.agent import Agent
 
 class DQNAgent(Agent):
 
-    def __init__(self, num_of_actions, network, criterion, optimizer, scheduler, gamma=0.999, epsilon=1):
+    def __init__(self, num_of_actions, network, criterion, optimizer, scheduler=None, gamma=0.999, epsilon=1):
         super().__init__(num_of_actions, gamma, epsilon)
         self.device = 'cpu'  # torch.device("cuda" if torch.cuda.is_available() else "cpu")
         # print(self.device) seems slower with gpu

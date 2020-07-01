@@ -20,7 +20,9 @@ layers_dim = [24, 48]
 target_update = 100
 batch_size = 32
 gamma = 0.99
+arch = dueling
+algo = double
 mem_size = 10_000
-mem_per = False
+mem_type = per
 
 [misc]

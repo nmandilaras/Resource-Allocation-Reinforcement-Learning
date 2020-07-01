@@ -20,7 +20,9 @@ LAYERS_DIM = 'layers_dim'
 TARGET_UPDATE = 'target_update'
 BATCH_SIZE = 'batch_size'
 GAMMA = 'gamma'
+ARCH = 'arch'
+ALGO = 'algo'
 MEM_SIZE = 'mem_size'
-MEM_PER = 'mem_per'
+MEM_PER = 'mem_type'
 
 # misc
