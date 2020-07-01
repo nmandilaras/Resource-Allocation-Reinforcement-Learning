@@ -54,7 +54,7 @@ class Rdt(gym.Env):
         self.action_space = spaces.Discrete(int(config_env[NUM_WAYS]))
         # latency, misses, bw, ways_be
         self.observation_space = spaces.Box(
-            low=np.array([0, 0, 0, 0]), high=np.array([20, 3 * 1e7, 1e5, self.action_space.n-1], dtype=np.float32),
+            low=np.array([0, 0, 0, 0]), high=np.array([20, 10, 1e5, self.action_space.n-1], dtype=np.float32),
             dtype=np.float32)
 
         self.mem_client = None
