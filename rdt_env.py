@@ -112,7 +112,7 @@ class Rdt(gym.Env):
     def _start_be(self, core):
         """ Start a container on specified core """
 
-        log.debug('New BE will be issued on core: {}'.format(core))
+        log.info('New BE will be issued on core: {}'.format(core))
 
         container, command, volume = random.choice(list(bes.values()))
 
