@@ -52,14 +52,14 @@ class Rdt(gym.Env):
         # log.debug(cores_loader)
 
         self.action_space = spaces.Discrete(int(config_env[NUM_WAYS]))
-        # latency, misses, bw, ways_be
-        self.observation_space = spaces.Box(
-            low=np.array([0, 0, 0, 0]), high=np.array([20, 10, 1e5, self.action_space.n-1], dtype=np.float32),
-            dtype=np.float32)
+        # # latency, misses, bw, ways_be
+        # self.observation_space = spaces.Box(
+        #     low=np.array([0, 0, 0, 0]), high=np.array([20, 10, 1e5, self.action_space.n-1], dtype=np.float32),
+        #     dtype=np.float32)
 
         # latency, misses, ways_be
         self.observation_space = spaces.Box(
-            low=np.array([0, 0, 0]), high=np.array([20, 10, self.action_space.n-1], dtype=np.float32),
+            low=np.array([0, 0]), high=np.array([20, self.action_space.n-1], dtype=np.float32),
             dtype=np.float32)
 
         self.mem_client = None
@@ -185,7 +185,7 @@ class Rdt(gym.Env):
         info = {LC_TAG: (ipc_hp, misses_hp, llc_hp, mbl_hp_ps, mbr_hp_ps, tail_latency, rps),
                 BE_TAG: (ipc_be, misses_be, llc_be, mbl_be_ps, mbr_be_ps, None, None)}
 
-        state = [tail_latency, misses_hp, action_be_ways]
+        state = [tail_latency, action_be_ways]
 
         # normalize the state
         state_normalized = [min(metric / max_val, 1) for metric, max_val in zip(state, self.observation_space.high)]
