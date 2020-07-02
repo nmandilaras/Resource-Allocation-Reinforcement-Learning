@@ -8,8 +8,8 @@ from agents.agent import Agent
 
 class DQNAgent(Agent):
 
-    def __init__(self, num_of_actions, network, criterion, optimizer, scheduler=None, gamma=0.999, epsilon=1):
-        super().__init__(num_of_actions, gamma, epsilon)
+    def __init__(self, num_of_actions, network, criterion, optimizer, scheduler=None, gamma=0.999, eps_decay=0.0005):
+        super().__init__(num_of_actions, gamma, epsilon=1)
         self.device = 'cpu'  # torch.device("cuda" if torch.cuda.is_available() else "cpu")
         # print(self.device) seems slower with gpu
         self.policy_net = network.to(self.device)
@@ -19,6 +19,7 @@ class DQNAgent(Agent):
         self.criterion = criterion
         self.optimizer = optimizer
         self.scheduler = scheduler
+        self.eps_decay = eps_decay
 
     def choose_action(self, state, train=True):
         if (random.random() < self.epsilon) and train:
@@ -80,7 +81,7 @@ class DQNAgent(Agent):
 
     def adjust_exploration(self, steps_done):
         # TODO check VDBE-Softmax
-        self.epsilon = EPS_END + (EPS_START - EPS_END) * math.exp(-steps_done * EPS_DECAY)
+        self.epsilon = EPS_END + (EPS_START - EPS_END) * math.exp(-steps_done * self.eps_decay)
         # the update function is used by series of Deep RL
         # self.epsilon = max(0.7 * 0.9, 0.05) # this function doesn't seem effective
 
@@ -98,8 +99,8 @@ class DQNAgent(Agent):
 
 
 class DoubleDQNAgent(DQNAgent):
-    def __init__(self, num_of_actions, network, criterion, optimizer, scheduler=None, gamma=0.999, epsilon=1):
-        super().__init__(num_of_actions, network, criterion, optimizer, gamma, epsilon)
+    def __init__(self, num_of_actions, network, criterion, optimizer, scheduler=None, gamma=0.999, eps_decay=0.0005):
+        super().__init__(num_of_actions, network, criterion, optimizer, gamma, eps_decay=eps_decay)
 
     def _calc_expected_q(self, next_state):
         """ """

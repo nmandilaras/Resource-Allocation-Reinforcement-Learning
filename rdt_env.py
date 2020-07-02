@@ -12,8 +12,9 @@ import logging.config
 from utils.constants import LC_TAG, BE_TAG
 from utils.config_constants import *
 import time
+import random
 
-logging.config.fileConfig('logging.conf')  # TODO path!
+logging.config.fileConfig('logging.conf')  # NOTE path!
 log = logging.getLogger('simpleExample')
 
 bes = {  # NOTE better to get those from file
@@ -37,19 +38,20 @@ class Rdt(gym.Env):
         self.loader_conn = config_env[LOADER_CONN]
         self.action_interval = config_env[ACTION_INTERVAL]
         self.pqos_interface = config_env[PQOS_INTERFACE]
-        self.be_name = config_env[BE_NAME]
+        # self.be_name = config_env[BE_NAME]
         self.ratio = config_env[GET_SET_RATIO]
-        self.num_bes = int(config_env[NUM_BES])
+        self.num_total_bes = int(config_env[NUM_BES])
         self.container_bes = []
         cores_pid_hp_range = parse_num_list(config_env[CORES_LC])
         self.cores_pids_be_range = parse_num_list(self.cores_pids_be)
+        self.cores_per_be = 1  # NOTE take as argument
         self.violations = 0  # calculate violations
         self.start_time_bes = None
         self.stop_time_bes = None
         self.interval_bes = None  # in minutes
-        # log.debug(cores_pid_hp_range)
-        # log.debug(self.cores_pids_be_range)
-        # log.debug(cores_loader)
+        self.seed = 1 # NOTE get as config
+        self.client = docker.from_env()
+        self.issued_bes = 0
 
         self.action_space = spaces.Discrete(int(config_env[NUM_WAYS]))
         # # latency, misses, bw, ways_be
@@ -107,23 +109,24 @@ class Rdt(gym.Env):
             log.debug("Unable to shutdown mem client. Retrying...")
             self.mem_client.terminate()
 
+    def _start_be(self, core):
+        """ Start a container on specified core """
+
+        log.debug('New BE will be issued on core: {}'.format(core))
+
+        container, command, volume = random.choice(list(bes.values()))
+
+        container_be = self.client.containers.run(container, command=command, name='be_' + core,
+                                                  cpuset_cpus=core, volumes_from=[volume], detach=True)
+        self.issued_bes += 1
+
+        return container_be
+
     def start_bes(self):
         """ Check if bes are already initialized and restarts them otherwise they will be launched"""
-        log.debug("BE {} to be started.".format(self.be_name))
-        client = docker.from_env()
-        if not self.container_bes:
-            container, command, volume = bes[self.be_name]
-            cores_per_be = int(len(self.cores_pids_be_range) / self.num_bes)
-            for i in range(self.num_bes):
-                cpuset = ','.join(map(str, self.cores_pids_be_range[i * cores_per_be: (i + 1) * cores_per_be]))
-                log.debug("Cores for be: {}".format(cpuset))
-                container_be = client.containers.run(container,
-                                                      command=command, name='be_' + str(i),
-                                                      cpuset_cpus=cpuset, volumes_from=[volume], detach=True)
-                self.container_bes.append(container_be)
-        else:
-            for container_be in self.container_bes:
-                container_be.restart()
+
+        num_startup_bes = min(len(self.cores_pids_be_range), self.num_total_bes)
+        self.container_bes = [self._start_be(str(self.cores_pids_be_range[i])) for i in range(num_startup_bes)]
 
         self.start_time_bes = time.time()
 
@@ -132,21 +135,35 @@ class Rdt(gym.Env):
         for container_be in self.container_bes:
             container_be.reload()
             if container_be.status == 'exited':
+                self._stop_be(container_be)
                 status.append(True)
             else:
                 status.append(False)
 
-        return status
+        # issue new dockers on cores that finished execution
+        for i, status in enumerate(status):
+            if status:
+                self.container_bes[i] = self._start_be(str(self.cores_pids_be_range[i]))
+                # TODO consider the possibility to increase exploration
+
+        done = self.issued_bes > self.num_total_bes
+
+        return done
+
+    @staticmethod
+    def _stop_be(container_be):
+        """"""
+        container_be.stop()
+        container_be.remove()
 
     def stop_bes(self):
         for container_be in self.container_bes:
-            container_be.stop()
-            container_be.remove()
+            self._stop_be(container_be)
 
     def determine_termination(self):
-        status = self.poll_bes()
-        log.debug(status)
-        done = any(status)
+        done = self.poll_bes()
+        # log.debug(status)
+        # done = any(status)
         if done:
             self.stop_time_bes = time.time()
             self.interval_bes = (self.stop_time_bes - self.start_time_bes) / 60
@@ -207,6 +224,8 @@ class Rdt(gym.Env):
         """ Probably when we end up in a very bad situation we want to start from the beginning.
             We may also want to start from the beginning when one process finishes or all of them finishes
           """
+        random.seed(self.seed)
+
         self.reset_pqos()
 
         # (re)launch the load tester
@@ -215,7 +234,8 @@ class Rdt(gym.Env):
         self.start_client()
         log.debug("Mem client started. Warm up period follows.")
 
-        # (re)launch the be containers
+        # launch the be containers
+        self.stop_bes()
         self.start_bes()
         log.debug('BEs started')
 

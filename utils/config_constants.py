@@ -24,5 +24,6 @@ ARCH = 'arch'
 ALGO = 'algo'
 MEM_SIZE = 'mem_size'
 MEM_PER = 'mem_type'
+EPS_DECAY = 'eps_decay'
 
 # misc

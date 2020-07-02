@@ -50,6 +50,7 @@ arch = config_agent[ARCH]  # Classic and Dueling DQN architectures are supported
 algo = config_agent[ALGO]  # DDQN or DQN
 mem_type = config_agent[MEM_PER]
 mem_size = int(config_agent[MEM_SIZE])
+eps_decay = float(config_agent[EPS_DECAY])
 
 if arch:
     dqn_arch = Dueling
@@ -69,9 +70,9 @@ else:
     memory = Memory(mem_size)
 
 if algo == 'double':
-    agent = DoubleDQNAgent(num_of_actions, network, criterion, optimizer, gamma=gamma)
+    agent = DoubleDQNAgent(num_of_actions, network, criterion, optimizer, gamma=gamma, eps_decay=eps_decay)
 else:
-    agent = DQNAgent(num_of_actions, network, criterion, optimizer, gamma=gamma)
+    agent = DQNAgent(num_of_actions, network, criterion, optimizer, gamma=gamma, eps_decay=eps_decay)
 
 done = False
 step = 0
