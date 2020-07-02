@@ -13,6 +13,7 @@ GET_SET_RATIO = 'ratio'
 NUM_BES = 'num_bes'
 NUM_WAYS = 'num_ways'
 PQOS_INTERFACE = 'pqos_interface'
+SEED = 'seed'
 
 # agent
 LR = 'lr'

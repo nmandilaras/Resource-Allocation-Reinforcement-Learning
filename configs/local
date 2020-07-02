@@ -13,6 +13,7 @@ ratio = 0
 num_bes = 7
 num_ways = 10
 pqos_interface = none
+seed = 1
 
 [agent]
 lr = 1e-2

@@ -44,12 +44,12 @@ class Rdt(gym.Env):
         self.container_bes = []
         cores_pid_hp_range = parse_num_list(config_env[CORES_LC])
         self.cores_pids_be_range = parse_num_list(self.cores_pids_be)
-        self.cores_per_be = 1  # NOTE take as argument
+        self.cores_per_be = 1  # NOTE discontinued
         self.violations = 0  # calculate violations
         self.start_time_bes = None
         self.stop_time_bes = None
         self.interval_bes = None  # in minutes
-        self.seed = 1 # NOTE get as config
+        self.seed = int(config_env[SEED])
         self.client = docker.from_env()
         self.issued_bes = 0
 
