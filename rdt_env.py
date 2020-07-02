@@ -18,9 +18,9 @@ logging.config.fileConfig('logging.conf')  # NOTE path!
 log = logging.getLogger('simpleExample')
 
 bes = {  # NOTE better to get those from file
-    #'in-memory': ('zilutian/in-memory-analytics:amd64', '/data/ml-latest /data/myratings.csv --driver-memory 6g --executor-memory 16g', 'data'),
+    'in-memory': ('zilutian/in-memory-analytics:amd64', '/data/ml-latest /data/myratings.csv --driver-memory 6g --executor-memory 16g', 'data'),
     'in-memory-small': ('zilutian/in-memory-analytics:amd64', '/data/ml-latest-small /data/myratings.csv', 'data'),
-    #'graphs': ('cloudsuite/graph-analytics', '--driver-memory 6g --executor-memory 16g', 'data-twitter')
+    'graphs': ('cloudsuite/graph-analytics', '--driver-memory 6g --executor-memory 16g', 'data-twitter')
 }
 
 
