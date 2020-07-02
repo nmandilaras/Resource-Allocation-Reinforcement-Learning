@@ -18,9 +18,9 @@ logging.config.fileConfig('logging.conf')  # NOTE path!
 log = logging.getLogger('simpleExample')
 
 bes = {  # NOTE better to get those from file
-    'in-memory': ('zilutian/in-memory-analytics:amd64', '/data/ml-latest /data/myratings.csv --driver-memory 6g --executor-memory 16g', 'data'),
+    #'in-memory': ('zilutian/in-memory-analytics:amd64', '/data/ml-latest /data/myratings.csv --driver-memory 6g --executor-memory 16g', 'data'),
     'in-memory-small': ('zilutian/in-memory-analytics:amd64', '/data/ml-latest-small /data/myratings.csv', 'data'),
-    'graphs': ('cloudsuite/graph-analytics', '--driver-memory 6g --executor-memory 16g', 'data-twitter')
+    #'graphs': ('cloudsuite/graph-analytics', '--driver-memory 6g --executor-memory 16g', 'data-twitter')
 }
 
 
@@ -59,9 +59,9 @@ class Rdt(gym.Env):
         #     low=np.array([0, 0, 0, 0]), high=np.array([20, 10, 1e5, self.action_space.n-1], dtype=np.float32),
         #     dtype=np.float32)
 
-        # latency, misses, ways_be
+        # latency, ipc, ways_be
         self.observation_space = spaces.Box(
-            low=np.array([0, 0]), high=np.array([20, self.action_space.n-1], dtype=np.float32),
+            low=np.array([5, 0.7, 0]), high=np.array([15, 0.9, self.action_space.n-1], dtype=np.float32),
             dtype=np.float32)
 
         self.mem_client = None
@@ -186,6 +186,15 @@ class Rdt(gym.Env):
     def set_association_class(self, action_be_ways):
         self.pqos_handler.set_allocation_class(action_be_ways)
 
+    @staticmethod
+    def _normalize(metric, min_val, max_val):
+        if metric > max_val:
+            return 1.0
+        elif metric < min_val:
+            return 0.0
+        else:
+            return (metric - min_val) / (max_val - min_val)
+
     def __get_next_state(self, action_be_ways):
         # poll metrics so the next poll will contains deltas from this point just after the action
         self.pqos_handler.update()
@@ -202,10 +211,11 @@ class Rdt(gym.Env):
         info = {LC_TAG: (ipc_hp, misses_hp, llc_hp, mbl_hp_ps, mbr_hp_ps, tail_latency, rps),
                 BE_TAG: (ipc_be, misses_be, llc_be, mbl_be_ps, mbr_be_ps, None, None)}
 
-        state = [tail_latency, action_be_ways]
+        state = [tail_latency, ipc_hp, action_be_ways]
 
         # normalize the state
-        state_normalized = [min(metric / max_val, 1) for metric, max_val in zip(state, self.observation_space.high)]
+        state_normalized = [self._normalize(metric, min_val, max_val) for metric, min_val, max_val in
+                            zip(state, self.observation_space.low, self.observation_space.high)]
 
         return state_normalized, info, tail_latency
 

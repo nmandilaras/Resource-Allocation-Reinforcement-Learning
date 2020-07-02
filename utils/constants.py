@@ -17,7 +17,7 @@ max_steps = 195
 
 # epsilon
 EPS_START = 1.0
-EPS_END = 0
+EPS_END = 0.01
 EPS_DECAY = 0.001  # drops to min around 100 episodes # 0.0005
 
 EVAL_INTERVAL = 10

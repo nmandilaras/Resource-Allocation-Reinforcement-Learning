@@ -93,10 +93,10 @@ try:
         state = next_state
 
         if agent.epsilon < EPS_END + 0.01 and not end_exploration_flag:
+            log.info("Conventional end of exploration at step: {}".format(step))
             exploration_viol = env.violations
             env.violations = 0
             end_exploration_step = step
-            log.info("Conventional end of exploration")
             end_exploration_flag = True
 
         step += 1
@@ -106,7 +106,7 @@ try:
         except ValueError:
             continue
         loss, errors = agent.update(transitions, is_weights)  # Perform one step of optimization on the policy net
-        agent.adjust_exploration(step)  # rate is updated at every step - taken from the tutorial
+        agent.adjust_exploration(step)  # rate is updated at every step
         memory.batch_update(indices, errors)
         if step % target_update == 0:  # Update the target network, had crucial impact
             agent.update_target_net()
@@ -126,8 +126,8 @@ try:
     writer.add_hparams({'lr': lr, 'gamma': gamma, 'HL Dims': str(layers_dim), 'Target_upd_interval': target_update,
                          'Double': algo, 'Dueling': arch, 'Batch Size': batch_size, 'Mem PER': mem_type,
                         'Mem Size': mem_size},
-                       {'violations': env.violations / (step - end_exploration_step),
-                        'violations_total': (env.violations + exploration_viol) / step,
+                       {'violations': (env.violations - exploration_viol) / (step - end_exploration_step),
+                        'violations_total': env.violations / step,
                         'slow_down': env.interval_bes})
 finally:
     writer.flush()

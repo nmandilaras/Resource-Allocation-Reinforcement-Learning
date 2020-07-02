@@ -23,7 +23,6 @@ def monitor_warm_up():
 
 step = 0
 
-
 parser = cmd_parser()
 parser.add_argument('--warm-up', type=int, default=0, help='Time to collect metrics before/after bes execution')
 parser.add_argument('--ways-be', type=int, default=-1, help='Ways to be allocated to best effort group')
@@ -81,6 +80,7 @@ try:
     writer.flush()
 
 finally:
+    log.warning('Stopping everything!')
     env.stop_bes()
 
     monitor_warm_up()
