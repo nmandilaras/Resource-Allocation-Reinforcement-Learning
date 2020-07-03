@@ -61,7 +61,7 @@ class Rdt(gym.Env):
 
         # latency, ipc, ways_be
         self.observation_space = spaces.Box(
-            low=np.array([5, 0.7, 0]), high=np.array([15, 0.9, self.action_space.n-1], dtype=np.float32),
+            low=np.array([5, 0.8, 0]), high=np.array([15, 0.86, self.action_space.n-1], dtype=np.float32),
             dtype=np.float32)
 
         self.mem_client = None
