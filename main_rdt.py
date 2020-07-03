@@ -95,7 +95,7 @@ try:
         if agent.epsilon < EPS_END + 0.01 and not end_exploration_flag:
             log.info("Conventional end of exploration at step: {}".format(step))
             exploration_viol = env.violations
-            env.violations = 0
+            #env.violations = 0
             end_exploration_step = step
             end_exploration_flag = True
 
@@ -121,7 +121,7 @@ try:
         writer.flush()
         log_net(agent.policy_net, 'PolicyNet', step)
 
-    log.info("Be finished")
+    log.info("Experiment finished after {}".format(step))
     writer.add_graph(agent.policy_net, torch.tensor(state, device=agent.device))
     writer.add_hparams({'lr': lr, 'gamma': gamma, 'HL Dims': str(layers_dim), 'Target_upd_interval': target_update,
                          'Double': algo, 'Dueling': arch, 'Batch Size': batch_size, 'Mem PER': mem_type,
