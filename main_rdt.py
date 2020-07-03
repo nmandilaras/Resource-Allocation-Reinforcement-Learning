@@ -53,26 +53,29 @@ mem_size = int(config_agent[MEM_SIZE])
 eps_decay = float(config_agent[EPS_DECAY])
 
 if arch:
+    log.info('Dueling architecture will be used.')
     dqn_arch = Dueling
 else:
     dqn_arch = ClassicDQN
 
 network = PolicyFC(num_of_observations, layers_dim, num_of_actions, dqn_arch, dropout=0)
 
-log.info("Number of parameters in our model: {}".format(sum(x.numel() for x in network.parameters())))
-
 criterion = torch.nn.MSELoss(reduction='none')  # torch.nn.SmoothL1Loss()  # Huber loss
 optimizer = optim.Adam(network.parameters(), lr)
 
 if mem_type == 'per':
+    log.info('Prioritized Experience Replay will be used.')
     memory = MemoryPER(mem_size)
 else:
     memory = Memory(mem_size)
 
 if algo == 'double':
+    log.info('Double DQN Agent will be used.')
     agent = DoubleDQNAgent(num_of_actions, network, criterion, optimizer, gamma=gamma, eps_decay=eps_decay)
 else:
     agent = DQNAgent(num_of_actions, network, criterion, optimizer, gamma=gamma, eps_decay=eps_decay)
+
+log.info("Number of parameters in our model: {}".format(sum(x.numel() for x in network.parameters())))
 
 done = False
 step = 0
@@ -95,7 +98,6 @@ try:
         if agent.epsilon < EPS_END + 0.01 and not end_exploration_flag:
             log.info("Conventional end of exploration at step: {}".format(step))
             exploration_viol = env.violations
-            #env.violations = 0
             end_exploration_step = step
             end_exploration_flag = True
 

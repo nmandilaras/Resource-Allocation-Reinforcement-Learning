@@ -14,6 +14,7 @@ NUM_BES = 'num_bes'
 NUM_WAYS = 'num_ways'
 PQOS_INTERFACE = 'pqos_interface'
 SEED = 'seed'
+EXP_DIST = 'exp_dist'
 
 # agent
 LR = 'lr'

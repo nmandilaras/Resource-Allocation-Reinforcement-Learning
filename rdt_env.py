@@ -40,6 +40,7 @@ class Rdt(gym.Env):
         self.pqos_interface = config_env[PQOS_INTERFACE]
         # self.be_name = config_env[BE_NAME]
         self.ratio = config_env[GET_SET_RATIO]
+        self.exponential_dist = config_env[EXP_DIST]
         self.num_total_bes = int(config_env[NUM_BES])
         self.container_bes = []
         cores_pid_hp_range = parse_num_list(config_env[CORES_LC])
@@ -52,6 +53,7 @@ class Rdt(gym.Env):
         self.seed = int(config_env[SEED])
         self.client = docker.from_env()
         self.issued_bes = 0
+        self.finished_bes = 0
         self.generator = None
 
         self.action_space = spaces.Discrete(int(config_env[NUM_WAYS]))
@@ -98,8 +100,9 @@ class Rdt(gym.Env):
         loader = '{}/loader'.format(self.loader_dir)
         dataset = '{}/twitter_dataset/twitter_dataset_30x'.format(self.loader_dir)
         servers = '{}/docker_servers.txt'.format(self.loader_dir)
-        self.mem_client = subprocess.Popen(['taskset', '--cpu-list', self.cores_loader, loader, '-a',
-                                            dataset, '-s', servers, '-g', self.ratio, '-c', self.loader_conn, '-w',
+        log.info(self.exponential_dist)
+        self.mem_client = subprocess.Popen(['taskset', '--cpu-list', self.cores_loader, loader, '-a', dataset,
+                                            '-s', servers, '-g', self.ratio, '-c', self.loader_conn, '-w',
                                             self.loader_threads, '-T', self.action_interval, '-r', str(self.rps)])
         sleep(10)  # wait in order to bind the socket
 
@@ -138,6 +141,7 @@ class Rdt(gym.Env):
             if container_be.status == 'exited':
                 self._stop_be(container_be)
                 status.append(True)
+                self.finished_bes += 1
             else:
                 status.append(False)
 
@@ -147,7 +151,7 @@ class Rdt(gym.Env):
                 self.container_bes[i] = self._start_be(str(self.cores_pids_be_range[i]))
                 # TODO consider the possibility to increase exploration
 
-        done = self.issued_bes > self.num_total_bes
+        done = self.finished_bes >= self.num_total_bes
 
         return done
 

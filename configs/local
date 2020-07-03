@@ -10,10 +10,11 @@ loader_threads = 1
 loader_conn = 10
 be_name = in-memory-small
 ratio = 0
-num_bes = 7
+num_bes = 0
 num_ways = 10
 pqos_interface = none
 seed = 1
+exp_dist = -e
 
 [agent]
 lr = 1e-2
