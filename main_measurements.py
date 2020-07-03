@@ -6,6 +6,7 @@ from utils.functions import write_metrics
 from utils.constants import LC_TAG, BE_TAG
 from utils.config_constants import *
 import time
+import random
 
 
 def monitor_warm_up():
@@ -46,6 +47,7 @@ try:
     # collect tail latency and hw metrics before launching be
     monitor_warm_up()
 
+    env.generator = random.Random(env.seed)
     env.start_bes()
 
     log.info("Num of ways that are going to be statically allocated to BEs: {}".format(args.ways_be))
