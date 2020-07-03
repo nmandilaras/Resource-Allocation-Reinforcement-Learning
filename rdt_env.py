@@ -52,6 +52,7 @@ class Rdt(gym.Env):
         self.seed = int(config_env[SEED])
         self.client = docker.from_env()
         self.issued_bes = 0
+        self.generator = None
 
         self.action_space = spaces.Discrete(int(config_env[NUM_WAYS]))
         # # latency, misses, bw, ways_be
@@ -114,7 +115,7 @@ class Rdt(gym.Env):
 
         log.info('New BE will be issued on core: {}'.format(core))
 
-        container, command, volume = random.choice(list(bes.values()))
+        container, command, volume = self.generator.choice(list(bes.values()))
 
         container_be = self.client.containers.run(container, command=command, name='be_' + core,
                                                   cpuset_cpus=core, volumes_from=[volume], detach=True)
@@ -234,7 +235,8 @@ class Rdt(gym.Env):
         """ Probably when we end up in a very bad situation we want to start from the beginning.
             We may also want to start from the beginning when one process finishes or all of them finishes
           """
-        random.seed(self.seed)
+        # random.seed(self.seed)
+        self.generator = random.Random(self.seed)
 
         self.reset_pqos()
 
