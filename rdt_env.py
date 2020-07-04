@@ -47,6 +47,7 @@ class Rdt(gym.Env):
         self.cores_pids_be_range = parse_num_list(self.cores_pids_be)
         self.cores_per_be = 1  # NOTE discontinued
         self.violations = 0  # calculate violations
+        self.steps = 0
         self.start_time_bes = None
         self.stop_time_bes = None
         self.interval_bes = None  # in minutes
@@ -287,6 +288,8 @@ class Rdt(gym.Env):
 
         reward = self.reward_func(action_be_ways, tail_latency)  # based on new metrics
 
+        self.steps += 1
+
         return state, reward, done, info
 
         # should we return done when the first app finishes ? or should we ignore this fact and just restart
@@ -298,6 +301,8 @@ class Rdt(gym.Env):
 
     def stop(self):
         log.warning('Stopping everything!')
+
+        log.info('Percentage of violations: {}'.format(self.violations / self.steps))
 
         # stop and remove the be containers
         self.stop_bes()
