@@ -51,6 +51,7 @@ class Rdt(gym.Env):
         self.stop_time_bes = None
         self.interval_bes = None  # in minutes
         self.seed = int(config_env[SEED])
+        self.penalty_coef = float(config_env[PEN_COEF])
         self.client = docker.from_env()
         self.issued_bes = 0
         self.finished_bes = 0
@@ -62,9 +63,14 @@ class Rdt(gym.Env):
         #     low=np.array([0, 0, 0, 0]), high=np.array([20, 10, 1e5, self.action_space.n-1], dtype=np.float32),
         #     dtype=np.float32)
 
-        # latency, ipc, ways_be
+        # # latency, ipc, ways_be
+        # self.observation_space = spaces.Box(
+        #     low=np.array([5, 0.8, 0]), high=np.array([15, 0.86, self.action_space.n-1], dtype=np.float32),
+        #     dtype=np.float32)
+
+        # # latency, ipc_lc, mpki_lc, bw_lc, ways_be
         self.observation_space = spaces.Box(
-            low=np.array([5, 0.8, 0]), high=np.array([15, 0.86, self.action_space.n-1], dtype=np.float32),
+            low=np.array([5, 0.75, 4, 200, 0]), high=np.array([15, 0.9, 5, 1000, self.action_space.n-1], dtype=np.float32),
             dtype=np.float32)
 
         self.mem_client = None
@@ -212,11 +218,12 @@ class Rdt(gym.Env):
         ipc_hp, misses_hp, llc_hp, mbl_hp_ps, mbr_hp_ps = self.pqos_handler.get_hp_metrics(time_interval)
         ipc_be, misses_be, llc_be, mbl_be_ps, mbr_be_ps = self.pqos_handler.get_be_metrics(time_interval)
 
-        socket_wide_bw = mbl_hp_ps + mbl_be_ps
+        bw_socket_wide = mbl_hp_ps + mbl_be_ps
+        bw_lc = mbl_hp_ps + mbr_hp_ps
         info = {LC_TAG: (ipc_hp, misses_hp, llc_hp, mbl_hp_ps, mbr_hp_ps, tail_latency, rps),
                 BE_TAG: (ipc_be, misses_be, llc_be, mbl_be_ps, mbr_be_ps, None, None)}
 
-        state = [tail_latency, ipc_hp, action_be_ways]
+        state = [tail_latency, ipc_hp, misses_hp, bw_lc, action_be_ways]
 
         # normalize the state
         state_normalized = [self._normalize(metric, min_val, max_val) for metric, min_val, max_val in
@@ -231,7 +238,7 @@ class Rdt(gym.Env):
             # NOTE by shaping the reward function in this way, we are making the assumption that progress of BEs is
             # depended by the LLC ways that are allocated to them at any point of their execution
         else:
-            reward = - 2 * self.action_space.n
+            reward = - self.penalty_coef * self.action_space.n
             self.violations += 1
         return reward
 

@@ -30,7 +30,7 @@ config_env, config_agent, config_misc = config_parser(args.config_file)
 logging.config.fileConfig('logging.conf')
 log = logging.getLogger('simpleExample')
 
-comment = "_{}_{}".format(config_env[BE_NAME], args.comment)
+comment = "_{}".format(args.comment)
 writer = SummaryWriter(comment=comment)
 
 env = Rdt(config_env)
