@@ -109,7 +109,8 @@ class Rdt(gym.Env):
         log.info(self.exponential_dist)
         self.mem_client = subprocess.Popen(['taskset', '--cpu-list', self.cores_loader, loader, '-a', dataset,
                                             '-s', servers, '-g', self.ratio, '-c', self.loader_conn, '-w',
-                                            self.loader_threads, '-T', self.action_interval, '-r', str(self.rps)])
+                                            self.loader_threads, '-T', self.action_interval, '-r', str(self.rps),
+                                            self.exponential_dist])
         sleep(10)  # wait in order to bind the socket
 
     def stop_client(self):
@@ -255,7 +256,7 @@ class Rdt(gym.Env):
         if self.mem_client is not None:
             self.stop_client()
         self.start_client()
-        log.debug("Mem client started. Warm up period follows.")
+        log.debug("Mem client started.")
 
         # launch the be containers
         self.stop_bes()

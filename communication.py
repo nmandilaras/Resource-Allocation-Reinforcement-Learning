@@ -4,7 +4,7 @@ import ctypes
 import logging.config
 
 HOST = '127.0.0.1'  # The server's hostname or IP address
-PORT = 8080        # The port used by the server
+PORT = 42171      # The port used by the server
 
 logging.config.fileConfig('logging.conf')
 log = logging.getLogger('simpleExample')
@@ -23,13 +23,13 @@ def get_loader_stats():
         s.sendall(b'get q95')
 
         # stats = Stats()
-        fmt = "dd"
+        fmt = "d"
         fmt_size = struct.calcsize(fmt)
         # log.debug('fmt_size:{}'.format(fmt_size))
         data = s.recv(fmt_size)        # this call will block
-        q95, rps = struct.unpack(fmt, data[:fmt_size])
+        q95 = struct.unpack(fmt, data[:fmt_size])[0]
 
     log.debug('Tail latency q95: {}'.format(q95))
-    log.debug('RPS: {}'.format(rps))
+    # log.debug('RPS: {}'.format(rps))
 
-    return q95, rps
+    return q95, -1
