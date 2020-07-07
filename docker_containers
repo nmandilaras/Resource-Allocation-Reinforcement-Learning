@@ -3,7 +3,7 @@
 #'in-memory-small': ('zilutian/in-memory-analytics:amd64', '/data/ml-latest-small /data/myratings.csv', 'data'),
 'graphs': ('cloudsuite/graph-analytics', '--driver-memory 6g --executor-memory 16g', 'data-twitter'),
 'pi' : ('nikmand/bes:spark-example', 'SparkPi 100000', None),
-'word-count': ('nikmand/bes:spark-example', '--driver-memory 6g --executor-memory 16g JavaWordCount /data/ml-latest/ratings.csv', 'data'),
+#'word-count': ('nikmand/bes:spark-example', '--driver-memory 6g --executor-memory 16g JavaWordCount /data/ml-latest/ratings.csv', 'data'),
 'DecisionTreeClassification': ('nikmand/bes:spark-example', 'ml.JavaDecisionTreeClassificationExample', 'data-svm'),
 'DecisionTreeRegression': ('nikmand/bes:spark-example', 'ml.JavaDecisionTreeRegressionExample', 'data-svm'),
 'FMClassifier': ('nikmand/bes:spark-example', 'ml.JavaFMClassifierExample', 'data-svm'),
@@ -19,6 +19,5 @@
 'RandomForestRegressor': ('nikmand/bes:spark-example', 'ml.JavaRandomForestRegressorExample', 'data-svm'),
 'StandardScaler': ('nikmand/bes:spark-example', 'ml.JavaStandardScalerExample', 'data-svm'),
 'VectorIndexer': ('nikmand/bes:spark-example', 'ml.JavaVectorIndexerExample', 'data-svm'),
-#'': ('nikmand/bes:spark-example', '', 'data-svm')
 }
 

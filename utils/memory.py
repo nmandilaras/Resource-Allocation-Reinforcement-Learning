@@ -99,7 +99,7 @@ class MemoryPER:  # stored as ( s, a, r, s_ ) in SumTree
         Update the priorities on the tree. Data on memory don't change.
         """
         errors += self.PER_e  # avoid 0
-        # errors = np.minimum(errors, self.PER_absolute_error_upper)  # not present in other implementation
+        errors = np.minimum(errors, self.PER_absolute_error_upper)  # not present in other implementation
         ps = np.power(errors, self.PER_a)
 
         for ti, p in zip(tree_idx, ps):
