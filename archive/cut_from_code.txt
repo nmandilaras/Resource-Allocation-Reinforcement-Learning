@@ -74,3 +74,8 @@ def eval_loop():
     # writer.add_text('Parameters', 'Optimizer used: Adam')
     # layout = {'Overview': {'Reward': ['Multiline', ['Reward/Train', 'Reward/Eval']]}}
     # writer.add_custom_scalars(layout)
+
+
+'FMClassifier': ('nikmand/bes:spark-example', 'ml.JavaFMClassifierExample', 'data-svm'),
+'FMRegressor': ('nikmand/bes:spark-example', 'ml.JavaFMRegressorExample', 'data-svm'),
+'RobustScaler': ('nikmand/bes:spark-example', 'ml.JavaRobustScalerExample', 'data-svm'),
