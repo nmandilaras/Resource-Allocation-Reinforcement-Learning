@@ -1,4 +1,5 @@
 import gym
+import ast
 from time import sleep
 from gym import spaces
 from communication import get_loader_stats
@@ -22,6 +23,10 @@ bes = {  # NOTE better to get those from file
     'in-memory-small': ('zilutian/in-memory-analytics:amd64', '/data/ml-latest-small /data/myratings.csv', 'data'),
     'graphs': ('cloudsuite/graph-analytics', '--driver-memory 6g --executor-memory 16g', 'data-twitter')
 }
+
+file = open("docker_containers", "r")
+contents = file.read()
+bes = ast.literal_eval(contents)
 
 
 class Rdt(gym.Env):
@@ -47,7 +52,7 @@ class Rdt(gym.Env):
         self.cores_pids_be_range = parse_num_list(self.cores_pids_be)
         self.cores_per_be = 1  # NOTE discontinued
         self.violations = 0  # calculate violations
-        self.steps = 0
+        self.steps = 1
         self.start_time_bes = None
         self.stop_time_bes = None
         self.interval_bes = None  # in minutes
@@ -89,6 +94,8 @@ class Rdt(gym.Env):
             else:
                 self.pqos_handler = PqosHandlerCore(cores_pid_hp_range, self.cores_pids_be_range)
 
+
+
     def reset_pqos(self):
         self.pqos_handler.reset()
         self.pqos_handler.setup()
@@ -107,7 +114,6 @@ class Rdt(gym.Env):
         loader = '{}/loader'.format(self.loader_dir)
         dataset = '{}/twitter_dataset/twitter_dataset_30x'.format(self.loader_dir)
         servers = '{}/docker_servers.txt'.format(self.loader_dir)
-        log.info(self.exponential_dist)
         self.mem_client = subprocess.Popen(['taskset', '--cpu-list', self.cores_loader, loader, '-a', dataset,
                                             '-s', servers, '-g', self.ratio, '-c', self.loader_conn, '-w',
                                             self.loader_threads, '-T', self.action_interval, '-r', str(self.rps),
@@ -124,12 +130,14 @@ class Rdt(gym.Env):
     def _start_be(self, core):
         """ Start a container on specified core """
 
-        log.info('New BE will be issued on core: {}'.format(core))
+        log.info('New BE will be issued on core: {} at step: {}'.format(core, self.steps))
 
-        container, command, volume = self.generator.choice(list(bes.values()))
-
+        be = self.generator.choice(list(bes.keys()))
+        log.info('Selected Job: {}'.format(be))
+        container, command, volume = bes[be]
         container_be = self.client.containers.run(container, command=command, name='be_' + core,
-                                                  cpuset_cpus=core, volumes_from=[volume], detach=True)
+                                                  cpuset_cpus=core, volumes_from=[volume] if volume is not None else [],
+                                                  detach=True)
         self.issued_bes += 1
 
         return container_be
