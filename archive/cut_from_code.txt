@@ -79,3 +79,5 @@ def eval_loop():
 'FMClassifier': ('nikmand/bes:spark-example', 'ml.JavaFMClassifierExample', 'data-svm'),
 'FMRegressor': ('nikmand/bes:spark-example', 'ml.JavaFMRegressorExample', 'data-svm'),
 'RobustScaler': ('nikmand/bes:spark-example', 'ml.JavaRobustScalerExample', 'data-svm'),
+'pi' : ('nikmand/bes:spark-example', 'SparkPi 500000', None),
+'word-count': ('nikmand/bes:spark-example', '--driver-memory 6g --executor-memory 16g JavaWordCount /data/ml-latest/ratings.csv', 'data'),
