@@ -23,13 +23,13 @@ def get_loader_stats():
         s.sendall(b'get q95')
 
         # stats = Stats()
-        fmt = "d"
+        fmt = "dd"
         fmt_size = struct.calcsize(fmt)
         # log.debug('fmt_size:{}'.format(fmt_size))
         data = s.recv(fmt_size)        # this call will block
-        q95 = struct.unpack(fmt, data[:fmt_size])[0]
+        q95, rps = struct.unpack(fmt, data[:fmt_size])
 
     log.debug('Tail latency q95: {}'.format(q95))
     # log.debug('RPS: {}'.format(rps))
 
-    return q95, -1
+    return q95, rps
