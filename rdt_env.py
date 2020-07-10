@@ -69,15 +69,15 @@ class Rdt(gym.Env):
         #     low=np.array([0, 0, 0, 0]), high=np.array([20, 10, 1e5, self.action_space.n-1], dtype=np.float32),
         #     dtype=np.float32)
 
-        # # latency, ipc, ways_be
-        # self.observation_space = spaces.Box(
-        #     low=np.array([5, 0.8, 0]), high=np.array([15, 0.86, self.action_space.n-1], dtype=np.float32),
-        #     dtype=np.float32)
+        # # latency, ipc 0.8-0.86, ways_be
+        self.observation_space = spaces.Box(
+            low=np.array([5, 0]), high=np.array([15, self.action_space.n-1], dtype=np.float32),
+            dtype=np.float32)
 
         # # latency, ipc_lc, mpki_lc, bw_lc, ways_be
-        self.observation_space = spaces.Box(
-            low=np.array([5, 0.75, 4, 200, 0]), high=np.array([15, 0.9, 5, 1000, self.action_space.n-1], dtype=np.float32),
-            dtype=np.float32)
+        # self.observation_space = spaces.Box(
+        #     low=np.array([5, 0.75, 4, 200, 0]), high=np.array([15, 0.9, 5, 1000, self.action_space.n-1], dtype=np.float32),
+        #     dtype=np.float32)
 
         self.mem_client = None
         self.container_be = None
@@ -144,6 +144,10 @@ class Rdt(gym.Env):
 
     def start_bes(self):
         """ Check if bes are already initialized and restarts them otherwise they will be launched"""
+
+        # cores_per_be = int(len(self.cores_pids_be_range) / self.num_bes)
+        # for i in range(self.num_bes):
+        #     cpuset = ','.join(map(str, self.cores_pids_be_range[i * cores_per_be: (i + 1) * cores_per_be]))
 
         num_startup_bes = min(len(self.cores_pids_be_range), self.num_total_bes)
         self.container_bes = [self._start_be(str(self.cores_pids_be_range[i])) for i in range(num_startup_bes)]
@@ -233,7 +237,7 @@ class Rdt(gym.Env):
         info = {LC_TAG: (ipc_hp, misses_hp, llc_hp, mbl_hp_ps, mbr_hp_ps, tail_latency, rps),
                 BE_TAG: (ipc_be, misses_be, llc_be, mbl_be_ps, mbr_be_ps, None, None)}
 
-        state = [tail_latency, ipc_hp, misses_hp, bw_lc, action_be_ways]
+        state = [tail_latency, action_be_ways]
 
         # normalize the state
         state_normalized = [self._normalize(metric, min_val, max_val) for metric, min_val, max_val in
