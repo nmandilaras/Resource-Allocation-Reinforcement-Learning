@@ -25,7 +25,7 @@ def monitor_warm_up():
 step = 0
 
 parser = cmd_parser()
-parser.add_argument('--warm-up', type=int, default=0, help='Time to collect metrics before/after bes execution')
+parser.add_argument('--warm-up', type=int, default=0, help='Time to collect metrics before/after bes execution in sec')
 parser.add_argument('--ways-be', type=int, default=-1, help='Ways to be allocated to best effort group')
 args = parser.parse_args()
 config_env, config_agent, config_misc = config_parser(args.config_file)
@@ -45,6 +45,7 @@ try:
     log.debug("Mem client started. Warm up period follows.")
 
     # collect tail latency and hw metrics before launching be
+    env.set_association_class(args.ways_be)
     monitor_warm_up()
 
     env.generator = random.Random(env.seed)
@@ -52,7 +53,6 @@ try:
 
     log.info("Num of ways that are going to be statically allocated to BEs: {}".format(args.ways_be))
 
-    env.set_association_class(args.ways_be)
     done = False
 
     while not done:
