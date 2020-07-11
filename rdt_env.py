@@ -37,7 +37,6 @@ class Rdt(gym.Env):
         self.loader_conn = config_env[LOADER_CONN]
         self.action_interval = config_env[ACTION_INTERVAL]
         self.pqos_interface = config_env[PQOS_INTERFACE]
-        # self.be_name = config_env[BE_NAME]
         self.ratio = config_env[GET_SET_RATIO]
         self.exponential_dist = config_env[EXP_DIST]
         self.num_total_bes = int(config_env[NUM_BES])
@@ -59,15 +58,15 @@ class Rdt(gym.Env):
         self.cores_map = lambda i: ','.join(map(str, self.cores_pids_be_range[i * self.cores_per_be: (i + 1) * self.cores_per_be]))
 
         self.action_space = spaces.Discrete(int(config_env[NUM_WAYS]))
-        # # latency, misses, bw, ways_be
-        # self.observation_space = spaces.Box(
-        #     low=np.array([0, 0, 0, 0]), high=np.array([20, 10, 1e5, self.action_space.n-1], dtype=np.float32),
-        #     dtype=np.float32)
-
-        # # latency, ipc 0.8-0.86, ways_be
+        # latency, mpki_be, ways_be
         self.observation_space = spaces.Box(
-            low=np.array([5, 0]), high=np.array([15, self.action_space.n-1], dtype=np.float32),
+            low=np.array([5, 0, 0]), high=np.array([15, 10, self.action_space.n-1], dtype=np.float32),
             dtype=np.float32)
+
+        # # latency, ipc 0.82-0.87, ways_be
+        # self.observation_space = spaces.Box(
+        #     low=np.array([5, 0]), high=np.array([15, self.action_space.n-1], dtype=np.float32),
+        #     dtype=np.float32)
 
         # # latency, ipc_lc, mpki_lc, bw_lc, ways_be
         # self.observation_space = spaces.Box(
@@ -120,6 +119,16 @@ class Rdt(gym.Env):
             log.debug("Unable to shutdown mem client. Retrying...")
             self.mem_client.terminate()
 
+    # def _select_be(self):
+    #     """ Select the same be for a number of consecutive requests and afterwards choose a new one randomly """
+    #
+    #     if self.be_quota <= 0:
+    #         self.be_quota -=1
+    #         return self.last_be
+    #     else:
+    #         self.be_quota = 9
+    #         return self.generator.choice(list(bes.keys()))
+
     def _start_be(self, cores):
         """ Start a container on specified cores """
 
@@ -161,6 +170,7 @@ class Rdt(gym.Env):
         for i, status in enumerate(status):
             if status:
                 self.container_bes[i] = self._start_be(self.cores_map(i))
+                log.info("Finished Bes: {}/{}".format(self.finished_bes, self.num_total_bes))
                 # TODO consider the possibility to increase exploration
 
         done = self.finished_bes >= self.num_total_bes
@@ -229,7 +239,7 @@ class Rdt(gym.Env):
         info = {LC_TAG: (ipc_hp, misses_hp, llc_hp, mbl_hp_ps, mbr_hp_ps, tail_latency, rps),
                 BE_TAG: (ipc_be, misses_be, llc_be, mbl_be_ps, mbr_be_ps, None, None)}
 
-        state = [tail_latency, action_be_ways]
+        state = [tail_latency, misses_be, action_be_ways]
 
         # normalize the state
         state_normalized = [self._normalize(metric, min_val, max_val) for metric, min_val, max_val in
