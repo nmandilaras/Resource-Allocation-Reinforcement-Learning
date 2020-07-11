@@ -44,7 +44,7 @@ class Rdt(gym.Env):
         self.container_bes = []
         cores_pid_hp_range = parse_num_list(config_env[CORES_LC])
         self.cores_pids_be_range = parse_num_list(self.cores_pids_be)
-        self.cores_per_be = config_env[CORES_PER_BE]
+        self.cores_per_be = int(config_env[CORES_PER_BE])
         self.violations = 0  # calculate violations
         self.steps = 1
         self.start_time_bes = None
@@ -56,6 +56,7 @@ class Rdt(gym.Env):
         self.issued_bes = 0
         self.finished_bes = 0
         self.generator = None
+        self.cores_map = lambda i: ','.join(map(str, self.cores_pids_be_range[i * self.cores_per_be: (i + 1) * self.cores_per_be]))
 
         self.action_space = spaces.Discrete(int(config_env[NUM_WAYS]))
         # # latency, misses, bw, ways_be
@@ -119,16 +120,16 @@ class Rdt(gym.Env):
             log.debug("Unable to shutdown mem client. Retrying...")
             self.mem_client.terminate()
 
-    def _start_be(self, core):
-        """ Start a container on specified core """
+    def _start_be(self, cores):
+        """ Start a container on specified cores """
 
-        log.info('New BE will be issued on core(s): {} at step: {}'.format(core, self.steps))
+        log.info('New BE will be issued on core(s): {} at step: {}'.format(cores, self.steps))
 
         be = self.generator.choice(list(bes.keys()))
         log.info('Selected Job: {}'.format(be))
         container, command, volume = bes[be]
-        container_be = self.client.containers.run(container, command=command, name='be_' + core,
-                                                  cpuset_cpus=core, volumes_from=[volume] if volume is not None else [],
+        container_be = self.client.containers.run(container, command=command, name='be_' + cores.replace(",", "_"),
+                                                  cpuset_cpus=cores, volumes_from=[volume] if volume is not None else [],
                                                   detach=True)
         self.issued_bes += 1
 
@@ -141,7 +142,7 @@ class Rdt(gym.Env):
         #     cpuset = ','.join(map(str, self.cores_pids_be_range[i * cores_per_be: (i + 1) * cores_per_be]))
 
         num_startup_bes = min(len(self.cores_pids_be_range) // self.cores_per_be, self.num_total_bes)
-        self.container_bes = [self._start_be(','.join(map(str, self.cores_pids_be_range[i * self.cores_per_be: (i + 1) * self.cores_per_be]))) for i in range(num_startup_bes)]
+        self.container_bes = [self._start_be(self.cores_map(i)) for i in range(num_startup_bes)]
 
         self.start_time_bes = time.time()
 
@@ -159,7 +160,7 @@ class Rdt(gym.Env):
         # issue new dockers on cores that finished execution
         for i, status in enumerate(status):
             if status:
-                self.container_bes[i] = self._start_be(str(self.cores_pids_be_range[i]))
+                self.container_bes[i] = self._start_be(self.cores_map(i))
                 # TODO consider the possibility to increase exploration
 
         done = self.finished_bes >= self.num_total_bes
