@@ -41,6 +41,7 @@ env = Rdt(config_env)
 try:
     env.reset_pqos()
     env.set_association_class(args.ways_be)
+    time.sleep(5)
     start_time = time.time()
     env.start_client()
     log.debug("Mem client started. Warm up period follows.")

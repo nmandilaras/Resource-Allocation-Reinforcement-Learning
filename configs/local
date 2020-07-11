@@ -10,11 +10,12 @@ loader_threads = 1
 loader_conn = 10
 be_name = in-memory-small
 ratio = 0
+cores_per_be = 1
 num_bes = 10
 num_ways = 10
 pqos_interface = none
 seed = 1
-exp_dist = -e
+exp_dist =
 pen_coef = 2
 
 [agent]

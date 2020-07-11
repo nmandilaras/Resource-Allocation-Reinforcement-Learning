@@ -18,12 +18,6 @@ import random
 logging.config.fileConfig('logging.conf')  # NOTE path!
 log = logging.getLogger('simpleExample')
 
-bes = {  # NOTE better to get those from file
-    'in-memory': ('zilutian/in-memory-analytics:amd64', '/data/ml-latest /data/myratings.csv --driver-memory 6g --executor-memory 16g', 'data'),
-    'in-memory-small': ('zilutian/in-memory-analytics:amd64', '/data/ml-latest-small /data/myratings.csv', 'data'),
-    'graphs': ('cloudsuite/graph-analytics', '--driver-memory 6g --executor-memory 16g', 'data-twitter')
-}
-
 file = open("docker_containers", "r")
 contents = file.read()
 bes = ast.literal_eval(contents)
@@ -50,7 +44,7 @@ class Rdt(gym.Env):
         self.container_bes = []
         cores_pid_hp_range = parse_num_list(config_env[CORES_LC])
         self.cores_pids_be_range = parse_num_list(self.cores_pids_be)
-        self.cores_per_be = 1  # NOTE discontinued
+        self.cores_per_be = config_env[CORES_PER_BE]
         self.violations = 0  # calculate violations
         self.steps = 1
         self.start_time_bes = None
@@ -94,8 +88,6 @@ class Rdt(gym.Env):
             else:
                 self.pqos_handler = PqosHandlerCore(cores_pid_hp_range, self.cores_pids_be_range)
 
-
-
     def reset_pqos(self):
         self.pqos_handler.reset()
         self.pqos_handler.setup()
@@ -130,7 +122,7 @@ class Rdt(gym.Env):
     def _start_be(self, core):
         """ Start a container on specified core """
 
-        log.info('New BE will be issued on core: {} at step: {}'.format(core, self.steps))
+        log.info('New BE will be issued on core(s): {} at step: {}'.format(core, self.steps))
 
         be = self.generator.choice(list(bes.keys()))
         log.info('Selected Job: {}'.format(be))
@@ -145,12 +137,11 @@ class Rdt(gym.Env):
     def start_bes(self):
         """ Check if bes are already initialized and restarts them otherwise they will be launched"""
 
-        # cores_per_be = int(len(self.cores_pids_be_range) / self.num_bes)
         # for i in range(self.num_bes):
         #     cpuset = ','.join(map(str, self.cores_pids_be_range[i * cores_per_be: (i + 1) * cores_per_be]))
 
-        num_startup_bes = min(len(self.cores_pids_be_range), self.num_total_bes)
-        self.container_bes = [self._start_be(str(self.cores_pids_be_range[i])) for i in range(num_startup_bes)]
+        num_startup_bes = min(len(self.cores_pids_be_range) // self.cores_per_be, self.num_total_bes)
+        self.container_bes = [self._start_be(','.join(map(str, self.cores_pids_be_range[i * self.cores_per_be: (i + 1) * self.cores_per_be]))) for i in range(num_startup_bes)]
 
         self.start_time_bes = time.time()
 

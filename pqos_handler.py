@@ -15,6 +15,7 @@ ways = [0x00001, 0x00003, 0x00007, 0x0000f,
         0x001ff, 0x003ff, 0x007ff, 0x00fff,
         0x01fff, 0x03fff, 0x07fff, 0x0ffff,
         0x1ffff, 0x3ffff, 0x7ffff, 0xfffff]
+# due to pqos limitation on the left side the min value of ways is 2 so lc will always have at least two ways
 
 base = (1 << 20) - 1  # NOTE consider auto-generate those by CpuInfo
 
