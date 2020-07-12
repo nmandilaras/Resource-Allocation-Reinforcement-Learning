@@ -239,7 +239,7 @@ class Rdt(gym.Env):
         info = {LC_TAG: (ipc_hp, misses_hp, llc_hp, mbl_hp_ps, mbr_hp_ps, tail_latency, rps),
                 BE_TAG: (ipc_be, misses_be, llc_be, mbl_be_ps, mbr_be_ps, None, None)}
 
-        state = [tail_latency, misses_be, action_be_ways]
+        state = [misses_be, action_be_ways]
 
         # normalize the state
         state_normalized = [self._normalize(metric, min_val, max_val) for metric, min_val, max_val in
