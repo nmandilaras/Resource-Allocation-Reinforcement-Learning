@@ -19,8 +19,8 @@ class Memory:
     def batch_update(self, tree_idx, abs_errors):
         pass
 
-    # def flush(self):  # if we use flush in every episode it doesn't get trained at all
-    #     self.memory.clear()
+    def flush(self):  # if we use flush in every episode it doesn't get trained at all
+        self.memory.clear()
 
 
 class MemoryPER:  # stored as ( s, a, r, s_ ) in SumTree
@@ -104,3 +104,6 @@ class MemoryPER:  # stored as ( s, a, r, s_ ) in SumTree
 
         for ti, p in zip(tree_idx, ps):
             self.tree.update(ti, p)
+
+    def flush(self):
+        pass

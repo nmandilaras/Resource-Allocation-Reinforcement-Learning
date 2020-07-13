@@ -58,6 +58,7 @@ class Rdt(gym.Env):
         self.cores_map = lambda i: ','.join(map(str, self.cores_pids_be_range[i * self.cores_per_be: (i + 1) * self.cores_per_be]))
         self.be_quota = 0
         self.last_be = None
+        self.new_be = False
 
         self.action_space = spaces.Discrete(int(config_env[NUM_WAYS]))
         # latency, mpki_be # used to be 5*1e7, ways_be
@@ -126,9 +127,13 @@ class Rdt(gym.Env):
 
         if self.be_quota > 0:
             self.be_quota -= 1
+            self.new_be = False
         else:
-            self.be_quota = 9 - 1
+            self.be_quota = len(self.cores_pids_be_range) // self.cores_per_be - 1  # add configuration parameter for this setting
             self.last_be = self.generator.choice(list(bes.keys()))
+            self.new_be = True
+            # increase exploration
+            # erase memory
 
     def _start_be(self, cores):
         """ Start a container on specified cores """
@@ -147,10 +152,7 @@ class Rdt(gym.Env):
         return container_be
 
     def start_bes(self):
-        """ Check if bes are already initialized and restarts them otherwise they will be launched"""
-
-        # for i in range(self.num_bes):
-        #     cpuset = ','.join(map(str, self.cores_pids_be_range[i * cores_per_be: (i + 1) * cores_per_be]))
+        """ Launches bes """
 
         num_startup_bes = min(len(self.cores_pids_be_range) // self.cores_per_be, self.num_total_bes)
         self.container_bes = [self._start_be(self.cores_map(i)) for i in range(num_startup_bes)]
@@ -173,7 +175,6 @@ class Rdt(gym.Env):
             if status:
                 self.container_bes[i] = self._start_be(self.cores_map(i))
                 log.info("Finished Bes: {}/{}".format(self.finished_bes, self.num_total_bes))
-                # TODO consider the possibility to increase exploration
 
         done = self.finished_bes >= self.num_total_bes
 
@@ -306,7 +307,7 @@ class Rdt(gym.Env):
 
         self.steps += 1
 
-        return state, reward, done, info
+        return state, reward, done, info, self.new_be
 
         # should we return done when the first app finishes ? or should we ignore this fact and just restart
         # episode could end after a number of steps

@@ -79,6 +79,7 @@ log.info("Number of parameters in our model: {}".format(sum(x.numel() for x in n
 
 done = False
 step = 0
+decaying_schedule = 0
 total_reward = 0
 exploration_viol = 0
 end_exploration_step = 0
@@ -90,7 +91,7 @@ try:
 
     while not done:
         action = agent.choose_action(state)
-        next_state, reward, done, info = env.step(action)
+        next_state, reward, done, info, new_be = env.step(action)
         next_state = np.float32(next_state)
         memory.store(state, action, next_state, reward, done)  # Store the transition in memory
         state = next_state
@@ -102,13 +103,22 @@ try:
             end_exploration_flag = True
 
         step += 1
+        decaying_schedule += 1
         total_reward += reward
+
+        if new_be:
+            log.info("New be started at step: {}. Exploration rate increased. Memory was flushed.".format(step))
+            decaying_schedule = min(decaying_schedule, 3210)  # resets exploration rate at 0.2
+            memory.flush()
+
         try:
             transitions, indices, is_weights = memory.sample(batch_size)
         except ValueError:
             continue
+
         loss, errors = agent.update(transitions, is_weights)  # Perform one step of optimization on the policy net
-        agent.adjust_exploration(step)  # rate is updated at every step
+
+        agent.adjust_exploration(decaying_schedule)  # rate is updated at every step
         memory.batch_update(indices, errors)
         if step % target_update == 0:  # Update the target network, had crucial impact
             agent.update_target_net()

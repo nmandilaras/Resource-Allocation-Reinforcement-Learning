@@ -79,11 +79,10 @@ class DQNAgent(Agent):
         # We can also use  other techniques for target updating like Polyak Averaging
         self.target_net.load_state_dict(self.policy_net.state_dict())
 
-    def adjust_exploration(self, steps_done):
+    def adjust_exploration(self, decaying_schedule):
         # TODO check VDBE-Softmax
-        self.epsilon = EPS_END + (EPS_START - EPS_END) * math.exp(-steps_done * self.eps_decay)
+        self.epsilon = EPS_END + (EPS_START - EPS_END) * math.exp(-decaying_schedule * self.eps_decay)
         # the update function is used by series of Deep RL
-        # self.epsilon = max(0.7 * 0.9, 0.05) # this function doesn't seem effective
 
     def save_checkpoint(self, filename):
         pass
