@@ -52,7 +52,7 @@ mem_type = config_agent[MEM_PER]
 mem_size = int(config_agent[MEM_SIZE])
 eps_decay = float(config_agent[EPS_DECAY])
 
-if arch:
+if arch == 'dueling':
     log.info('Dueling architecture will be used.')
     dqn_arch = Dueling
 else:

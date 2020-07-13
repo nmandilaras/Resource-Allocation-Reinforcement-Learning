@@ -56,11 +56,13 @@ class Rdt(gym.Env):
         self.finished_bes = 0
         self.generator = None
         self.cores_map = lambda i: ','.join(map(str, self.cores_pids_be_range[i * self.cores_per_be: (i + 1) * self.cores_per_be]))
+        self.be_quota = 0
+        self.last_be = None
 
         self.action_space = spaces.Discrete(int(config_env[NUM_WAYS]))
-        # latency, mpki_be, ways_be
+        # latency, mpki_be # used to be 5*1e7, ways_be
         self.observation_space = spaces.Box(
-            low=np.array([2*1e6, 0]), high=np.array([6*1e7, self.action_space.n-1], dtype=np.float32),
+            low=np.array([2*1e6, 0]), high=np.array([7*1e7, self.action_space.n-1], dtype=np.float32),
             dtype=np.float32)
 
         # # latency, ipc 0.82-0.87, ways_be
@@ -119,22 +121,22 @@ class Rdt(gym.Env):
             log.debug("Unable to shutdown mem client. Retrying...")
             self.mem_client.terminate()
 
-    # def _select_be(self):
-    #     """ Select the same be for a number of consecutive requests and afterwards choose a new one randomly """
-    #
-    #     if self.be_quota <= 0:
-    #         self.be_quota -=1
-    #         return self.last_be
-    #     else:
-    #         self.be_quota = 9
-    #         return self.generator.choice(list(bes.keys()))
+    def _select_be(self):
+        """ Select the same be for a number of consecutive requests and afterwards choose a new one randomly """
+
+        if self.be_quota > 0:
+            self.be_quota -= 1
+        else:
+            self.be_quota = 9 - 1
+            self.last_be = self.generator.choice(list(bes.keys()))
 
     def _start_be(self, cores):
         """ Start a container on specified cores """
 
         log.info('New BE will be issued on core(s): {} at step: {}'.format(cores, self.steps))
 
-        be = self.generator.choice(list(bes.keys()))
+        self._select_be()
+        be = self.last_be  # self.generator.choice(list(bes.keys()))
         log.info('Selected Job: {}'.format(be))
         container, command, volume = bes[be]
         container_be = self.client.containers.run(container, command=command, name='be_' + cores.replace(",", "_"),
