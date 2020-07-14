@@ -108,7 +108,7 @@ try:
 
         if new_be:
             log.info("New be started at step: {}. Exploration rate increased.".format(step))
-            decaying_schedule = min(decaying_schedule, 3210)  # resets exploration rate at 0.2
+            decaying_schedule = min(decaying_schedule, 4500)  # resets exploration rate at 0.2 3210, 4500 for 0.1
             # log.info("Memory was flushed.")
             # memory.flush()
 
