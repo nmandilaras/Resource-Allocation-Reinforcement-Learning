@@ -127,7 +127,6 @@ class Rdt(gym.Env):
 
         if self.be_quota > 0:
             self.be_quota -= 1
-            self.new_be = False
         else:
             self.be_quota = len(self.cores_pids_be_range) // self.cores_per_be - 1  # add configuration parameter for this setting
             self.last_be = self.generator.choice(list(bes.keys()))
@@ -289,6 +288,7 @@ class Rdt(gym.Env):
         """ At each step the agent specifies the number of ways that are assigned to the be"""
 
         log.debug("Action selected: {}".format(action_be_ways))
+        self.new_be = False
         done = self.determine_termination()
 
         # err_msg = "%r (%s) invalid" % (action_be_ways, type(action_be_ways))

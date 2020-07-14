@@ -107,9 +107,10 @@ try:
         total_reward += reward
 
         if new_be:
-            log.info("New be started at step: {}. Exploration rate increased. Memory was flushed.".format(step))
+            log.info("New be started at step: {}. Exploration rate increased.".format(step))
             decaying_schedule = min(decaying_schedule, 3210)  # resets exploration rate at 0.2
-            memory.flush()
+            # log.info("Memory was flushed.")
+            # memory.flush()
 
         try:
             transitions, indices, is_weights = memory.sample(batch_size)
