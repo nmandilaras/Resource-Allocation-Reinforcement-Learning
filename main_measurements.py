@@ -76,6 +76,7 @@ try:
         writer.add_scalar('Agent/Reward', reward, step)
 
         step += 1
+        env.step += 1
 
     log.info("Be finished")
     writer.add_hparams({'Action': args.ways_be, 'RPS': config_env[LOADER_RPS]},
