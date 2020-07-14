@@ -8,7 +8,8 @@ from agents.agent import Agent
 
 class DQNAgent(Agent):
 
-    def __init__(self, num_of_actions, network, criterion, optimizer, scheduler=None, gamma=0.999, eps_decay=0.0005):
+    def __init__(self, num_of_actions, network, criterion, optimizer, gamma=0.999, eps_decay=0.0005, eps_start=1,
+                 eps_end=0.01):
         super().__init__(num_of_actions, gamma, epsilon=1)
         self.device = 'cpu'  # torch.device("cuda" if torch.cuda.is_available() else "cpu")
         # print(self.device) seems slower with gpu
@@ -18,8 +19,10 @@ class DQNAgent(Agent):
         self.target_net.eval()  # gradient updates never happens in target net
         self.criterion = criterion
         self.optimizer = optimizer
-        self.scheduler = scheduler
+        # self.scheduler = scheduler
         self.eps_decay = eps_decay
+        self.eps_start = eps_start
+        self.eps_end = eps_end
 
     def choose_action(self, state, train=True):
         if (random.random() < self.epsilon) and train:
@@ -81,7 +84,7 @@ class DQNAgent(Agent):
 
     def adjust_exploration(self, decaying_schedule):
         # TODO check VDBE-Softmax
-        self.epsilon = EPS_END + (EPS_START - EPS_END) * math.exp(-decaying_schedule * self.eps_decay)
+        self.epsilon = self.eps_end + (self.eps_start - self.eps_end) * math.exp(-decaying_schedule * self.eps_decay)
         # the update function is used by series of Deep RL
 
     def save_checkpoint(self, filename):
@@ -98,8 +101,9 @@ class DQNAgent(Agent):
 
 
 class DoubleDQNAgent(DQNAgent):
-    def __init__(self, num_of_actions, network, criterion, optimizer, scheduler=None, gamma=0.999, eps_decay=0.0005):
-        super().__init__(num_of_actions, network, criterion, optimizer, gamma, eps_decay=eps_decay)
+    def __init__(self, num_of_actions, network, criterion, optimizer, gamma=0.99, eps_decay=0.0005, eps_start=1,
+                 eps_end=0.01):
+        super().__init__(num_of_actions, network, criterion, optimizer, gamma, eps_decay, eps_start, eps_end)
 
     def _calc_expected_q(self, next_state):
         """ """

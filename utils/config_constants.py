@@ -28,5 +28,8 @@ ALGO = 'algo'
 MEM_SIZE = 'mem_size'
 MEM_PER = 'mem_type'
 EPS_DECAY = 'eps_decay'
+EPS_START = 'eps_start'
+EPS_END = 'eps_end'
+CHECKPOINT = 'checkpoint'
 
 # misc

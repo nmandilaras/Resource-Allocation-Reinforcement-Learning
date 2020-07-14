@@ -12,7 +12,8 @@ from agents.dqn_agents import DQNAgent, DoubleDQNAgent
 from torch.utils.tensorboard import SummaryWriter
 from utils.config_constants import *
 from utils.functions import write_metrics
-from utils.constants import EPS_END
+from datetime import datetime
+import os
 
 
 def log_net(net, net_name, step):
@@ -51,6 +52,9 @@ algo = config_agent[ALGO]  # DDQN or DQN
 mem_type = config_agent[MEM_PER]
 mem_size = int(config_agent[MEM_SIZE])
 eps_decay = float(config_agent[EPS_DECAY])
+eps_start = float(config_agent[EPS_START])
+eps_end = float(config_agent[EPS_END])
+checkpoint_path = config_agent[CHECKPOINT]
 
 if arch == 'dueling':
     log.info('Dueling architecture will be used.')
@@ -59,6 +63,11 @@ else:
     dqn_arch = ClassicDQN
 
 network = PolicyFC(num_of_observations, layers_dim, num_of_actions, dqn_arch, dropout=0)
+
+if checkpoint_path:
+    log.info("Loading weights from checkpoint.")
+    weights = torch.load(checkpoint_path)
+    network.load_state_dict(weights)
 
 criterion = torch.nn.MSELoss(reduction='none')  # torch.nn.SmoothL1Loss()  # Huber loss
 optimizer = optim.Adam(network.parameters(), lr)
@@ -71,9 +80,9 @@ else:
 
 if algo == 'double':
     log.info('Double DQN Agent will be used.')
-    agent = DoubleDQNAgent(num_of_actions, network, criterion, optimizer, gamma=gamma, eps_decay=eps_decay)
+    agent = DoubleDQNAgent(num_of_actions, network, criterion, optimizer, gamma, eps_decay, eps_start, eps_end)
 else:
-    agent = DQNAgent(num_of_actions, network, criterion, optimizer, gamma=gamma, eps_decay=eps_decay)
+    agent = DQNAgent(num_of_actions, network, criterion, optimizer, gamma, eps_decay, eps_start, eps_end)
 
 log.info("Number of parameters in our model: {}".format(sum(x.numel() for x in network.parameters())))
 
@@ -96,7 +105,7 @@ try:
         memory.store(state, action, next_state, reward, done)  # Store the transition in memory
         state = next_state
 
-        if agent.epsilon < EPS_END + 0.01 and not end_exploration_flag:
+        if agent.epsilon < eps_end + 0.01 and not end_exploration_flag:
             log.info("Conventional end of exploration at step: {}".format(step))
             exploration_viol = env.violations
             end_exploration_step = step
@@ -142,6 +151,10 @@ try:
                        {'violations': (env.violations - exploration_viol) / (step - end_exploration_step),
                         'violations_total': env.violations / step,
                         'slow_down': env.interval_bes})
+
+    save_file = os.path.join('checkpoints', datetime.now().strftime('%b%d_%H-%M-%S') + comment + '.pkl')
+    torch.save(agent.policy_net.state_dict(), save_file)
+
 finally:
     writer.flush()
     writer.close()

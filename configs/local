@@ -10,7 +10,7 @@ loader_threads = 1
 loader_conn = 10
 ratio = 0
 cores_per_be = 3
-num_bes = 10
+num_bes = 1
 num_ways = 10
 pqos_interface = none
 seed = 1
@@ -28,5 +28,8 @@ algo = double
 mem_size = 10_000
 mem_type = per
 eps_decay = 0.001
+eps_start = 1
+eps_end = 0.01
+checkpoint = checkpoints/Jul14_17-41-31_.pkl
 
 [misc]
