@@ -198,7 +198,7 @@ class PqosHandler:
             mask_be = ways[-1]
             mask_hp = ways[-1]
         else:
-            mask_be = ways[ways_be * 2]
+            mask_be = ways[ways_be]
             mask_hp = mask_be ^ base
         cos_hp = self.l3ca.COS(self.cos_id_hp, mask_hp)
         cos_be = self.l3ca.COS(self.cos_id_be, mask_be)
