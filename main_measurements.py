@@ -57,7 +57,7 @@ try:
     done = False
 
     while not done:
-        done = env.determine_termination()
+        done = env.determine_termination() if env.steps % (500 // int(env.action_interval)) == 0 else False
 
         q95_latency, rps = env.get_loader_stats()
         env.update_hw_metrics()
