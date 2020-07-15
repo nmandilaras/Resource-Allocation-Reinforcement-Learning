@@ -290,7 +290,7 @@ class Rdt(gym.Env):
         # log.debug("Action selected: {}".format(action_be_ways))
         self.new_be = False
         # check once for every 500ms
-        done = self.determine_termination() if self.steps % (500 // self.action_interval) == 0 else False
+        done = self.determine_termination() if self.steps % (500 // int(self.action_interval)) == 0 else False
 
         # err_msg = "%r (%s) invalid" % (action_be_ways, type(action_be_ways))
         # assert self.action_space.contains(action_be_ways), err_msg
