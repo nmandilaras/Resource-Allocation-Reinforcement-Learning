@@ -104,7 +104,7 @@ try:
         start_time = time.time()
         next_state, reward, done, info, new_be = env.step(action)
         end_time = time.time()
-        time_interval = end_time - start_time
+        time_interval = (end_time - start_time) * 1000
         writer.add_scalar('Timing/Env Step', time_interval, step)
         next_state = np.float32(next_state)
         memory.store(state, action, next_state, reward, done)  # Store the transition in memory
@@ -150,7 +150,7 @@ try:
         log_net(agent.policy_net, 'PolicyNet', step)
 
         end_time_2 = time.time()
-        time_interval_2 = end_time_2 - end_time
+        time_interval_2 = (end_time_2 - end_time) * 1000
         writer.add_scalar('Timing/Training', time_interval_2, step)
 
     log.info("Experiment finished after {}".format(step))
