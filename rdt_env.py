@@ -139,8 +139,8 @@ class Rdt(gym.Env):
 
         log.info('New BE will be issued on core(s): {} at step: {}'.format(cores, self.steps))
 
-        self._select_be()
-        be = self.last_be  # self.generator.choice(list(bes.keys()))
+        # self._select_be()
+        be = self.generator.choice(list(bes.keys()))  # self.last_be
         log.info('Selected Job: {}'.format(be))
         container, command, volume = bes[be]
         container_be = self.client.containers.run(container, command=command, name='be_' + cores.replace(",", "_"),
