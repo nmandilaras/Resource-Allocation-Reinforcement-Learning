@@ -287,9 +287,10 @@ class Rdt(gym.Env):
     def step(self, action_be_ways):
         """ At each step the agent specifies the number of ways that are assigned to the be"""
 
-        log.debug("Action selected: {}".format(action_be_ways))
+        # log.debug("Action selected: {}".format(action_be_ways))
         self.new_be = False
-        done = self.determine_termination()
+        # check once for every 500ms
+        done = self.determine_termination() if self.steps % (500 // self.action_interval) == 0 else False
 
         # err_msg = "%r (%s) invalid" % (action_be_ways, type(action_be_ways))
         # assert self.action_space.contains(action_be_ways), err_msg
