@@ -72,11 +72,11 @@ try:
         write_metrics(BE_TAG, (ipc_be, misses_be, llc_be, mbl_be_ps, mbr_be_ps, None), writer, step)
 
         # next_state, reward, done, info = env.step(args.ways_be)
-        writer.add_scalar('Agent/Action', args.ways_be, step)
+        # writer.add_scalar('Agent/Action', args.ways_be, step)
         writer.add_scalar('Agent/Reward', reward, step)
 
         step += 1
-        env.step += 1
+        env.steps += 1
 
     log.info("Be finished")
     writer.add_hparams({'Action': args.ways_be, 'RPS': config_env[LOADER_RPS]},

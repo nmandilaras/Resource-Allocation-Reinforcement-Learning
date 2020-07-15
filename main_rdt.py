@@ -138,6 +138,7 @@ try:
             write_metrics(key, value, writer, step)
         writer.add_scalar('Agent/Action', action, step)
         writer.add_scalar('Agent/Reward', reward, step)
+        writer.add_scalar('Agent/Cumulative Reward', total_reward, step)
         writer.add_scalar('Agent/Epsilon', agent.epsilon, step)
         writer.add_scalar('Agent/Loss', loss, step)
         writer.flush()
