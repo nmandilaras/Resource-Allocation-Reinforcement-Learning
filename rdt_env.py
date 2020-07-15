@@ -61,9 +61,9 @@ class Rdt(gym.Env):
         self.new_be = False
 
         self.action_space = spaces.Discrete(int(config_env[NUM_WAYS]))
-        # latency, mpki_be # used to be 2*1e6, 5*1e7, ways_be
+        # latency, mpki_be # used to be 2*1e6, 5*1e7, ways_be # 20 me 25 gia mpc
         self.observation_space = spaces.Box(
-            low=np.array([20, 0]), high=np.array([25, self.action_space.n-1], dtype=np.float32),
+            low=np.array([0, 0]), high=np.array([14, self.action_space.n-1], dtype=np.float32),
             dtype=np.float32)
 
         # # latency, ipc 0.82-0.87, ways_be
