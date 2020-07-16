@@ -80,7 +80,7 @@ try:
 
     log.info("Be finished")
     writer.add_hparams({'Action': args.ways_be, 'RPS': config_env[LOADER_RPS]},
-                       {'violations': env.violations / step, 'slow_down': env.interval_bes})
+                       {'violations_total': env.violations / step, 'slow_down': env.interval_bes})
     writer.flush()
 
 finally:

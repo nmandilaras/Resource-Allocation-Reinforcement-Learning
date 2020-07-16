@@ -25,6 +25,7 @@ def log_net(net, net_name, step):
     writer.flush()
 
 
+time_at_start = datetime.now().strftime('%b%d_%H-%M-%S')
 parser = cmd_parser()
 args = parser.parse_args()
 config_env, config_agent, config_misc = config_parser(args.config_file)
@@ -103,7 +104,7 @@ try:
         action = agent.choose_action(state)
         # measuring env step time
         # start_time = time.time()
-        next_state, reward, done, info, new_be = env.step(action)
+        next_state, reward, done, info, new_be = env.step(action)  # could run in parallel with the rest of the loop but GIL prevents this
         # end_time = time.time()
         # time_interval = (end_time - start_time) * 1000
         # writer.add_scalar('Timing/Env Step', time_interval, step)
@@ -111,6 +112,7 @@ try:
         memory.store(state, action, next_state, reward, done)  # Store the transition in memory
         state = next_state
 
+        # measure the violations of the exploration phase separately
         if agent.epsilon < eps_end + 0.01 and not end_exploration_flag:
             log.info("Conventional end of exploration at step: {}".format(step))
             exploration_viol = env.violations
@@ -121,11 +123,11 @@ try:
         decaying_schedule += 1
         total_reward += reward
 
-        if new_be:
-            log.info("New be started at step: {}. Exploration rate increased.".format(step))
-            decaying_schedule = min(decaying_schedule, 4500)  # resets exploration rate at 0.2 3210, 4500 for 0.1
-            # log.info("Memory was flushed.")
-            # memory.flush()
+        # if new_be:
+        #     log.info("New be started at step: {}. Exploration rate increased.".format(step))
+        #     decaying_schedule = min(decaying_schedule, 4500)  # resets exploration rate at 0.2 3210, 4500 for 0.1
+        #     # log.info("Memory was flushed.")
+        #     # memory.flush()
 
         try:
             transitions, indices, is_weights = memory.sample(batch_size)
@@ -144,7 +146,7 @@ try:
             write_metrics(key, value, writer, step)
         writer.add_scalar('Agent/Action', action, step)
         writer.add_scalar('Agent/Reward', reward, step)
-        writer.add_scalar('Agent/Cumulative Reward', total_reward, step)
+        writer.add_scalar('Agent/Reward Cumulative', total_reward, step)
         writer.add_scalar('Agent/Epsilon', agent.epsilon, step)
         writer.add_scalar('Agent/Loss', loss, step)
         writer.flush()
@@ -160,11 +162,12 @@ try:
     writer.add_hparams({'lr': lr, 'gamma': gamma, 'HL Dims': str(layers_dim), 'Target_upd_interval': target_update,
                          'Double': algo, 'Dueling': arch, 'Batch Size': batch_size, 'Mem PER': mem_type,
                         'Mem Size': mem_size},
-                       {'violations': (env.violations - exploration_viol) / (step - end_exploration_step),
-                        'violations_total': env.violations / step,
-                        'slow_down': env.interval_bes})
+                       {'Results/violations': (env.violations - exploration_viol) / (step - end_exploration_step),
+                        'Results/violations_exploration': exploration_viol / end_exploration_step,
+                        'Results/violations_total': env.violations / step,
+                        'Results/slow_down': env.interval_bes})
 
-    save_file = os.path.join('checkpoints', datetime.now().strftime('%b%d_%H-%M-%S') + comment + '.pkl')
+    save_file = os.path.join('checkpoints', time_at_start + comment + '.pkl')
     torch.save(agent.policy_net.state_dict(), save_file)
 
 finally:

@@ -1,6 +1,6 @@
 {
 #'in-memory': ('zilutian/in-memory-analytics:amd64', '/data/ml-latest /data/myratings.csv --driver-memory 6g --executor-memory 16g', 'data'),
-#'in-memory-small': ('zilutian/in-memory-analytics:amd64', '/data/ml-latest-small /data/myratings.csv', 'data'),
+'in-memory-small': ('zilutian/in-memory-analytics:amd64', '/data/ml-latest-small /data/myratings.csv', 'data'),
 #'graphs': ('cloudsuite/graph-analytics', '--driver-memory 6g --executor-memory 16g', 'data-twitter'),
 #'DecisionTreeClassification': ('nikmand/bes:spark-example', 'ml.JavaDecisionTreeClassificationExample', 'data-svm'),
 #'DecisionTreeRegression': ('nikmand/bes:spark-example', 'ml.JavaDecisionTreeRegressionExample', 'data-svm'),
@@ -14,8 +14,11 @@
 #'RandomForestRegressor': ('nikmand/bes:spark-example', 'ml.JavaRandomForestRegressorExample', 'data-svm'),
 #'StandardScaler': ('nikmand/bes:spark-example', 'ml.JavaStandardScalerExample', 'data-svm'),
 #'VectorIndexer': ('nikmand/bes:spark-example', 'ml.JavaVectorIndexerExample', 'data-svm'),
-'libquantum': ('nikmand/spec:462', None, None),
-'mcf': ('nikmand/spec:429', None, None),
-'lbm': ('nikmand/spec:470', None, None)
+#'libquantum': ('nikmand/spec:462', None, None),
+#'mcf': ('nikmand/spec:429', None, None),
+#'lbm': ('nikmand/spec:470', None, None)
+#'astar': ('nikmand/spec:473', None, None),
+#'hmmer': ('nikmand/spec:456', None, None),
+#'gems': ('nikmand/spec:459', None, None)
 }
 

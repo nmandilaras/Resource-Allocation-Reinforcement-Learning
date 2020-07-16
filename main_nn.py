@@ -31,11 +31,13 @@ lr = 1e-3
 layers_dim = [24, 48]
 dropout = 0
 gamma = 1
+eps_decay, eps_start, eps_end = 0.001, 1, 0
 mem_size = 10_000
 
 dueling = True  # Classic and Dueling DQN architectures are supported
 if dueling:
     dqn_arch = Dueling
+
 else:
     dqn_arch = ClassicDQN
 
@@ -45,7 +47,7 @@ log.debug("Number of parameters in our model: {}".format(sum(x.numel() for x in 
 
 criterion = torch.nn.MSELoss(reduction='none')  # torch.nn.SmoothL1Loss()  # Huber loss
 optimizer = optim.Adam(network.parameters(), lr)
-scheduler = ReduceLROnPlateau(optimizer, factor=0.9, patience=20)  # not used in update for now
+# scheduler = ReduceLROnPlateau(optimizer, factor=0.9, patience=20)  # not used in update for now
 # ExponentialLR(optimizer, lr_deacy)  # alternative scheduler
 # scheduler will reduce the lr by the specified factor when metric has stopped improving
 per = True
@@ -56,9 +58,9 @@ else:
 
 double = True
 if double:
-    agent = DoubleDQNAgent(num_of_actions, network, criterion, optimizer, scheduler, gamma)
+    agent = DoubleDQNAgent(num_of_actions, network, criterion, optimizer, gamma, eps_decay, eps_start, eps_end)
 else:
-    agent = DQNAgent(num_of_actions, network, criterion, optimizer, scheduler, gamma)
+    agent = DQNAgent(num_of_actions, network, criterion, optimizer, gamma, eps_decay, eps_start, eps_end)
 
 steps_done = 0
 train_rewards, eval_rewards = {}, {}
@@ -153,7 +155,7 @@ if constants.TENSORBOARD:
     # first dict with hparams, second dict with metrics
     writer.add_hparams({'lr': lr, 'gamma': gamma, 'HL Dims': str(layers_dim), 'Double': double, 'Dueling': dueling,
                         'PER': per, 'Mem Size': mem_size, 'Target_upd_interval': TARGET_UPDATE,
-                        'Batch Size': BATCH_SIZE, 'EPS_DECAY': constants.EPS_DECAY},
+                        'Batch Size': BATCH_SIZE, 'EPS_DECAY': eps_decay},
                        {'episodes_needed': len(train_rewards)})
     writer.flush()
     writer.close()

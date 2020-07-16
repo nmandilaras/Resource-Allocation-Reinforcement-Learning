@@ -61,7 +61,7 @@ class Rdt(gym.Env):
         self.new_be = False
 
         self.action_space = spaces.Discrete(int(config_env[NUM_WAYS]))
-        # latency, mpki_be # used to be 2*1e6, 5*1e7, ways_be # 20 me 25 gia mpc
+        # latency, mpki_be # used to be 2*1e6, 5*1e7, ways_be # 14 me 30 gia mpc kai be=mcf
         self.observation_space = spaces.Box(
             low=np.array([0, 0]), high=np.array([14, self.action_space.n-1], dtype=np.float32),
             dtype=np.float32)
@@ -238,6 +238,7 @@ class Rdt(gym.Env):
 
         bw_socket_wide = mbl_hp_ps + mbl_be_ps
         bw_lc = mbl_hp_ps + mbr_hp_ps
+        # misses_be = misses_be / (int(self.action_interval) // 50)
         info = {LC_TAG: (ipc_hp, misses_hp, llc_hp, mbl_hp_ps, mbr_hp_ps, tail_latency, rps),
                 BE_TAG: (ipc_be, misses_be, llc_be, mbl_be_ps, mbr_be_ps, None, None)}
 
