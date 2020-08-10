@@ -112,6 +112,10 @@ try:
         memory.store(state, action, next_state, reward, done)  # Store the transition in memory
         state = next_state
 
+        step += 1
+        if mem_type == 'per' and memory.tree.n_entries < 1000:
+            continue
+
         # measure the violations of the exploration phase separately
         if agent.epsilon < eps_end + 0.01 and not end_exploration_flag:
             log.info("Conventional end of exploration at step: {}".format(step))
@@ -119,10 +123,11 @@ try:
             end_exploration_step = step
             end_exploration_flag = True
 
-        step += 1
+        # step += 1
         decaying_schedule += 1
         total_reward += reward
 
+        # probably it won't be used as it doesn't seem effective and we cannot justified it properly
         # if new_be:
         #     log.info("New be started at step: {}. Exploration rate increased.".format(step))
         #     decaying_schedule = min(decaying_schedule, 4500)  # resets exploration rate at 0.2 3210, 4500 for 0.1
