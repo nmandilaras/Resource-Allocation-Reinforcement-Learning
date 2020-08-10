@@ -16,6 +16,7 @@ PQOS_INTERFACE = 'pqos_interface'
 SEED = 'seed'
 EXP_DIST = 'exp_dist'
 PEN_COEF = 'pen_coef'
+BE_NAME = 'be_name'
 
 # agent
 LR = 'lr'

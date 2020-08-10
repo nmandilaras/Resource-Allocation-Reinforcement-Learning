@@ -75,9 +75,28 @@ def eval_loop():
     # layout = {'Overview': {'Reward': ['Multiline', ['Reward/Train', 'Reward/Eval']]}}
     # writer.add_custom_scalars(layout)
 
-
+# not available in spark version that we use
 'FMClassifier': ('nikmand/bes:spark-example', 'ml.JavaFMClassifierExample', 'data-svm'),
 'FMRegressor': ('nikmand/bes:spark-example', 'ml.JavaFMRegressorExample', 'data-svm'),
 'RobustScaler': ('nikmand/bes:spark-example', 'ml.JavaRobustScalerExample', 'data-svm'),
+
+# caused major problems
 'pi' : ('nikmand/bes:spark-example', 'SparkPi 500000', None),
 'word-count': ('nikmand/bes:spark-example', '--driver-memory 6g --executor-memory 16g JavaWordCount /data/ml-latest/ratings.csv', 'data'),
+
+# problem with dataset
+'NaiveBayesExample': ('nikmand/bes:spark-example', 'ml.JavaNaiveBayesExample', 'data-svm')
+
+# working but similar to others
+#'DecisionTreeRegression': ('nikmand/bes:spark-example', 'ml.JavaDecisionTreeRegressionExample', 'data-svm'),
+#'GradientBoostedTreeClassifier': ('nikmand/bes:spark-example', 'ml.JavaGradientBoostedTreeClassifierExample', 'data-svm'),
+#'LogisticRegressionSummary': ('nikmand/bes:spark-example', 'ml.JavaLogisticRegressionSummaryExample', 'data-svm'),
+#'RandomForestRegressor': ('nikmand/bes:spark-example', 'ml.JavaRandomForestRegressorExample', 'data-svm'),
+
+# small bes and not ml or analytics
+#'StandardScaler': ('nikmand/bes:spark-example', 'ml.JavaStandardScalerExample', 'data-svm'),
+#'VectorIndexer': ('nikmand/bes:spark-example', 'ml.JavaVectorIndexerExample', 'data-svm'),
+
+# latency, mpki_be # used to be 2*1e6, 5*1e7, ways_be # 14 me 28 gia mpc # 30 me 120 gia mpki
+# 1.5 * 1e7 - 5*1e7 για misses sthn klimaka twn 50ms
+

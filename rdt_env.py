@@ -57,6 +57,7 @@ class Rdt(gym.Env):
         self.generator = None
         self.cores_map = lambda i: ','.join(map(str, self.cores_pids_be_range[i * self.cores_per_be: (i + 1) * self.cores_per_be]))
         self.be_quota = 0
+        self.be_name = config_env[BE_NAME]
         self.last_be = None
         self.new_be = False
 
@@ -139,8 +140,8 @@ class Rdt(gym.Env):
 
         log.info('New BE will be issued on core(s): {} at step: {}'.format(cores, self.steps))
 
-        # self._select_be()
-        be = self.generator.choice(list(bes.keys()))  # self.last_be
+        # self._select_be() me to select bazame san be to last
+        be = self.be_name if self.be_name else self.generator.choice(list(bes.keys()))  # self.last_be
         log.info('Selected Job: {}'.format(be))
         container, command, volume = bes[be]
         container_be = self.client.containers.run(container, command=command, name='be_' + cores.replace(",", "_"),

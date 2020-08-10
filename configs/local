@@ -11,11 +11,12 @@ loader_conn = 10
 ratio = 0
 cores_per_be = 3
 num_bes = 1
-num_ways = 10
+num_ways = 9
 pqos_interface = none
 seed = 1
 exp_dist =
 pen_coef = 2
+be_name =
 
 [agent]
 lr = 1e-2
@@ -30,6 +31,6 @@ mem_type = per
 eps_decay = 0.001
 eps_start = 1
 eps_end = 0.01
-checkpoint = checkpoints/Jul14_17-41-31_.pkl
+checkpoint =
 
 [misc]
