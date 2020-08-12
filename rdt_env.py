@@ -63,8 +63,9 @@ class Rdt(gym.Env):
 
         self.action_space = spaces.Discrete(int(config_env[NUM_WAYS]))
         # latency, mpki_be # used to be 2*1e6, 5*1e7, ways_be # 14 me 30 gia mpc kai be=mcf
+        # for gradient boost high in misses raised to 20 from 14
         self.observation_space = spaces.Box(
-            low=np.array([0, 0]), high=np.array([14, self.action_space.n-1], dtype=np.float32),
+            low=np.array([0, 0]), high=np.array([20, self.action_space.n-1], dtype=np.float32),
             dtype=np.float32)
 
         # # latency, ipc 0.82-0.87, ways_be
@@ -140,8 +141,8 @@ class Rdt(gym.Env):
 
         log.info('New BE will be issued on core(s): {} at step: {}'.format(cores, self.steps))
 
-        # self._select_be() me to select bazame san be to last
-        be = self.be_name if self.be_name else self.generator.choice(list(bes.keys()))  # self.last_be
+        self._select_be()  # me to select bazame san be to last
+        be = self.last_be  # self.be_name if self.be_name else self.generator.choice(list(bes.keys()))  # self.last_be
         log.info('Selected Job: {}'.format(be))
         container, command, volume = bes[be]
         container_be = self.client.containers.run(container, command=command, name='be_' + cores.replace(",", "_"),
