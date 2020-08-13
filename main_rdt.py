@@ -147,6 +147,9 @@ try:
             log.info("Memory was flushed.")
             memory.flush()
 
+            save_file = os.path.join('checkpoints', time_at_start + comment + '_' + step + '.pkl')
+            torch.save(agent.policy_net.state_dict(), save_file)
+
         try:
             transitions, indices, is_weights = memory.sample(batch_size)
         except ValueError:
@@ -187,10 +190,10 @@ try:
                         'Results/violations_total': env.violations / step,
                         'Results/slow_down': env.interval_bes})
 
+finally:
     save_file = os.path.join('checkpoints', time_at_start + comment + '.pkl')
     torch.save(agent.policy_net.state_dict(), save_file)
 
-finally:
     writer.flush()
     writer.close()
     env.stop()
