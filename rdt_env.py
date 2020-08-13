@@ -66,7 +66,7 @@ class Rdt(gym.Env):
         # latency, mpki_be # used to be 2*1e6, 5*1e7, ways_be # 14 me 30 gia mpc kai be=mcf
         # for gradient boost high in misses raised to 20 from 14
         self.observation_space = spaces.Box(
-            low=np.array([0, 0]), high=np.array([20, self.action_space.n-1], dtype=np.float32),
+            low=np.array([0, 0]), high=np.array([14, self.action_space.n-1], dtype=np.float32),
             dtype=np.float32)
 
         # # latency, ipc 0.82-0.87, ways_be
