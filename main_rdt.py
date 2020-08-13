@@ -147,7 +147,7 @@ try:
             log.info("Memory was flushed.")
             memory.flush()
 
-            save_file = os.path.join('checkpoints', time_at_start + comment + '_' + step + '.pkl')
+            save_file = os.path.join('checkpoints', time_at_start + comment + '_' + str(step) + '.pkl')
             torch.save(agent.policy_net.state_dict(), save_file)
 
         try:
