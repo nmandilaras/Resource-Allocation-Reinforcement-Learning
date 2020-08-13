@@ -128,6 +128,7 @@ class Rdt(gym.Env):
     def _select_be(self):
 
         if self.be_quota == self.be_repeated:
+            log.info("Quota expired new be will be issued!")
             self.be_quota = 1
             self.last_be = self.be_name.pop(0) if self.be_name else self.generator.choice(list(bes.keys()))
             self.new_be = True
