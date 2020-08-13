@@ -138,7 +138,6 @@ try:
             end_exploration_flag = True
 
         # step += 1
-        decaying_schedule += 1
         total_reward += reward
 
         # probably it won't be used as it doesn't seem effective and we cannot justified it properly
@@ -152,6 +151,8 @@ try:
             transitions, indices, is_weights = memory.sample(batch_size)
         except ValueError:
             continue
+
+        decaying_schedule += 1
 
         loss, errors = agent.update(transitions, is_weights)  # Perform one step of optimization on the policy net
 
