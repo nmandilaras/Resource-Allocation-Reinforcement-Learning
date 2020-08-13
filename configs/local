@@ -16,7 +16,7 @@ pqos_interface = none
 seed = 1
 exp_dist =
 pen_coef = 2
-be_name =
+be_name = ['graphs', 'in-memory']
 be_repeated = 1
 
 [agent]

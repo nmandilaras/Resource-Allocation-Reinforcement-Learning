@@ -56,7 +56,7 @@ class Rdt(gym.Env):
         self.finished_bes = 0
         self.generator = None
         self.cores_map = lambda i: ','.join(map(str, self.cores_pids_be_range[i * self.cores_per_be: (i + 1) * self.cores_per_be]))
-        self.be_name = config_env[BE_NAME]
+        self.be_name = ast.literal_eval(config_env[BE_NAME]) if config_env[BE_NAME] else None
         self.be_repeated = config_env[BE_REPEATED]
         self.be_quota = self.be_repeated
         self.last_be = None
@@ -129,7 +129,7 @@ class Rdt(gym.Env):
 
         if self.be_quota == self.be_repeated:
             self.be_quota = 1
-            self.last_be = self.be_name if self.be_name else self.generator.choice(list(bes.keys()))
+            self.last_be = self.be_name.pop(0) if self.be_name else self.generator.choice(list(bes.keys()))
             self.new_be = True
             # increase exploration
             # erase memory
