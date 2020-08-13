@@ -57,6 +57,7 @@ eps_decay = float(config_agent[EPS_DECAY])
 eps_start = float(config_agent[EPS_START])
 eps_end = float(config_agent[EPS_END])
 checkpoint_path = config_agent[CHECKPOINT]
+init_weights = config_agent[WEIGHTS]
 
 if arch == 'dueling':
     log.info('Dueling architecture will be used.')
@@ -69,6 +70,19 @@ network = PolicyFC(num_of_observations, layers_dim, num_of_actions, dqn_arch, dr
 if checkpoint_path:
     log.info("Loading weights from checkpoint.")
     weights = torch.load(checkpoint_path)
+
+    # for var_name in weights:
+    #     print(var_name, "\t", weights[var_name].size())
+
+    if init_weights == 'init':
+        log.info("Weights of last layers will be reinitialized.")
+
+        weights["output.value_stream.0.weight"] = torch.rand(1, weights["output.value_stream.0.weight"].size(1), requires_grad=True)
+        weights["output.value_stream.0.bias"] = torch.rand(1, requires_grad=True)
+
+        weights["output.advantage_stream.0.weight"] = torch.rand(num_of_actions, weights["output.advantage_stream.0.weight"].size(1), requires_grad=True)
+        weights["output.advantage_stream.0.bias"] = torch.rand(num_of_actions, requires_grad=True)
+
     network.load_state_dict(weights)
 
 criterion = torch.nn.MSELoss(reduction='none')  # torch.nn.SmoothL1Loss()  # Huber loss

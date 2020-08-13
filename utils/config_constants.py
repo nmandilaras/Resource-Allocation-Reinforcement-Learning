@@ -18,6 +18,7 @@ EXP_DIST = 'exp_dist'
 PEN_COEF = 'pen_coef'
 BE_NAME = 'be_name'
 BE_REPEATED = 'be_repeated'
+WEIGHTS = 'weights'
 
 # agent
 LR = 'lr'
