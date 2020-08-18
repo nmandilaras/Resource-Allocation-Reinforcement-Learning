@@ -35,7 +35,7 @@ if config_env[ACTION_INTERVAL] is None:
     config_env[ACTION_INTERVAL] = args.interval
 
 if config_env[BE_NAME] == 'multi':
-    config_env[BE_NAME] = [args.be_name]
+    config_env[BE_NAME] = str([args.be_name])
 
 logging.config.fileConfig('logging.conf')
 log = logging.getLogger('simpleExample')
