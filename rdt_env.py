@@ -61,6 +61,7 @@ class Rdt(gym.Env):
         self.be_quota = self.be_repeated
         self.last_be = None
         self.new_be = False
+        self.quantile = config_env[QUANTILE]
 
         self.action_space = spaces.Discrete(int(config_env[NUM_WAYS]))
         # latency, mpki_be # used to be 2*1e6, 5*1e7, ways_be # 14 me 30 gia mpc kai be=mcf
@@ -115,7 +116,7 @@ class Rdt(gym.Env):
         self.mem_client = subprocess.Popen(['taskset', '--cpu-list', self.cores_loader, loader, '-a', dataset,
                                             '-s', servers, '-g', self.ratio, '-c', self.loader_conn, '-w',
                                             self.loader_threads, '-T', self.action_interval, '-r', str(self.rps),
-                                            self.exponential_dist])
+                                            '-q', self.quantile, self.exponential_dist])
         sleep(10)  # wait in order to bind the socket
 
     def stop_client(self):

@@ -39,6 +39,8 @@ if config_env[ACTION_INTERVAL] == "-1":
 if config_env[BE_NAME] == 'multi':
     config_env[BE_NAME] = str([args.be_name])
 
+config_env[QUANTILE] = args.quantile
+
 comment = "_{}".format(args.comment)
 writer = SummaryWriter(comment=comment)
 

@@ -27,6 +27,7 @@ def cmd_parser():
     parser.add_argument('--tensorboard', action='store_true', help='Enable Tensorboard')  # unused
     parser.add_argument('-c', '--config-file', default='configs/local', help='Path to config file')
     parser.add_argument('--comment', default='', help='Comment to add on tensorboard folder name as suffix')
+    parser.add_argument('-q', '--quantile', default='.95', help='Choose quantile for which stats will be reported')
     # parser.add_argument('--path-mem', help='')
     # nargs='+' all command-line args present are gathered into a list
 

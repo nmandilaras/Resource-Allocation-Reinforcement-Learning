@@ -19,6 +19,7 @@ PEN_COEF = 'pen_coef'
 BE_NAME = 'be_name'
 BE_REPEATED = 'be_repeated'
 WEIGHTS = 'weights'
+QUANTILE = 'quantile'
 
 # agent
 LR = 'lr'
