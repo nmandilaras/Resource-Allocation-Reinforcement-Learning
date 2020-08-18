@@ -107,7 +107,7 @@ step = 0
 decaying_schedule = 0
 total_reward = 0
 exploration_viol = 0
-end_exploration_step = 0
+end_exploration_step = 1
 end_exploration_flag = False
 
 try:
