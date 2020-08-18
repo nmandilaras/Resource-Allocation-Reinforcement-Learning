@@ -163,7 +163,7 @@ class Rdt(gym.Env):
     def start_bes(self):
         """ Launches bes """
 
-        num_startup_bes = min(len(self.cores_pids_be_range) // self.cores_per_be, self.num_total_bes)
+        num_startup_bes = len(self.cores_pids_be_range) // self.cores_per_be
         self.container_bes = [self._start_be(self.cores_map(i)) for i in range(num_startup_bes)]
 
         self.start_time_bes = time.time()
