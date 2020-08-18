@@ -185,10 +185,10 @@ try:
     writer.add_hparams({'lr': lr, 'gamma': gamma, 'HL Dims': str(layers_dim), 'Target_upd_interval': target_update,
                          'Double': algo, 'Dueling': arch, 'Batch Size': batch_size, 'Mem PER': mem_type,
                         'Mem Size': mem_size},
-                       {'Results/violations': (env.violations - exploration_viol) / (step - end_exploration_step),
-                        'Results/violations_exploration': exploration_viol / end_exploration_step,
-                        'Results/violations_total': env.violations / step,
-                        'Results/slow_down': env.interval_bes})
+                       {'Results/Violations': (env.violations - exploration_viol) / (step - end_exploration_step),
+                        'Results/Violations Exploration': exploration_viol / end_exploration_step,
+                        'Results/Violations Total': env.violations / step,
+                        'Results/Time': env.interval_bes})
 
 finally:
     save_file = os.path.join('checkpoints', time_at_start + comment + '.pkl')

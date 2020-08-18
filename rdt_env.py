@@ -130,8 +130,14 @@ class Rdt(gym.Env):
         if self.be_quota == self.be_repeated:
             log.info("Quota expired new be will be issued!")
             self.be_quota = 1
-            self.last_be = self.be_name.pop(0) if self.be_name else self.generator.choice(list(bes.keys()))
-            self.new_be = True
+            if self.be_name:
+                next_be = self.be_name.pop(0)
+                if next_be != self.last_be:
+                    self.last_be = next_be
+                    self.new_be = True
+            else:
+                self.generator.choice(list(bes.keys()))
+                self.new_be = True
             # increase exploration
             # erase memory
         else:

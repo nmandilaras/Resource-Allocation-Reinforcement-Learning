@@ -57,7 +57,7 @@ try:
     done = False
 
     while not done:
-        done = env.determine_termination() if env.steps % (500 // int(env.action_interval)) == 0 else False
+        done = env.determine_termination() if env.steps % (1000 // int(env.action_interval)) == 0 else False
 
         q95_latency, rps = env.get_loader_stats()
         env.update_hw_metrics()
@@ -79,8 +79,8 @@ try:
         env.steps += 1
 
     log.info("Be finished")
-    writer.add_hparams({'Action': args.ways_be, 'RPS': config_env[LOADER_RPS]},
-                       {'violations_total': env.violations / step, 'slow_down': env.interval_bes})
+    writer.add_hparams({'Action': args.ways_be},
+                       {'Results/Violations Total': env.violations / step, 'Results/Time': env.interval_bes})
     writer.flush()
 
 finally:
