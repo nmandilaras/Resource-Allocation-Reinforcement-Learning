@@ -28,7 +28,14 @@ def log_net(net, net_name, step):
 time_at_start = datetime.now().strftime('%b%d_%H-%M-%S')
 parser = cmd_parser()
 args = parser.parse_args()
+
 config_env, config_agent, config_misc = config_parser(args.config_file)
+
+if config_env[ACTION_INTERVAL] is None:
+    config_env[ACTION_INTERVAL] = args.interval
+
+if config_env[BE_NAME] == 'multi':
+    config_env[BE_NAME] = [args.be_name]
 
 logging.config.fileConfig('logging.conf')
 log = logging.getLogger('simpleExample')
