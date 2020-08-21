@@ -72,7 +72,7 @@ class Rdt(gym.Env):
         self.quantile = config_env[QUANTILE]
         self.feature = config_env[FEATURE]
 
-        feature_min, feature_max = bes[self.feature]
+        feature_min, feature_max = features[self.feature]
         log.info("Feature {} will be used with limits: {} - {}".format(self.feature, feature_min, feature_max))
 
         self.action_space = spaces.Discrete(int(config_env[NUM_WAYS]))
