@@ -64,14 +64,18 @@ def get_event_name(event_type):
 
 def get_metrics(group_values, time_interval):
     ipc = group_values.ipc
-    misses = group_values.llc_misses_delta / (group_values.ipc_unhalted_delta / 1000.)  # group_values.ipc_retired_delta
+    misses = group_values.llc_misses_delta  # / (group_values.ipc_unhalted_delta / 1000.)
+
     llc = bytes_to_mb(group_values.llc)
     mbl = bytes_to_mb(group_values.mbm_local_delta)
     mbr = bytes_to_mb(group_values.mbm_remote_delta)
 
+    cycles = group_values.ipc_unhalted_delta
+    instructions = group_values.ipc_retired_delta
+
     mbl_ps, mbr_ps = mbl / time_interval, mbr / time_interval
 
-    return ipc, misses, llc, mbl_ps, mbr_ps
+    return ipc, misses, llc, mbl_ps, mbr_ps, cycles, instructions
 
 
 def get_metrics_random():

@@ -40,6 +40,7 @@ if config_env[BE_NAME] == 'multi':
     config_env[BE_NAME] = str([args.be_name])
 
 config_env[QUANTILE] = args.quantile
+config_env[FEATURE] = args.feature
 
 comment = "_{}".format(args.comment)
 writer = SummaryWriter(comment=comment)

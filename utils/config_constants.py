@@ -20,6 +20,7 @@ BE_NAME = 'be_name'
 BE_REPEATED = 'be_repeated'
 WEIGHTS = 'weights'
 QUANTILE = 'quantile'
+FEATURE = 'feature'
 
 # agent
 LR = 'lr'

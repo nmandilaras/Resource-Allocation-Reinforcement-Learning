@@ -22,6 +22,14 @@ file = open("docker_containers", "r")
 contents = file.read()
 bes = ast.literal_eval(contents)
 
+features = {
+    'MPKC': (0, 14),
+    'MPKI': (0, 8),
+    'Misses': (0, 7*1e7),
+    'IPC': (0, 2.8),
+    'Bandwidth': (0, 3*1e4)
+    }
+
 
 class Rdt(gym.Env):
     metadata = {'render.modes': ['human']}
@@ -62,12 +70,16 @@ class Rdt(gym.Env):
         self.last_be = None
         self.new_be = False
         self.quantile = config_env[QUANTILE]
+        self.feature = config_env[FEATURE]
+
+        feature_min, feature_max = bes[self.feature]
+        log.info("Feature {} will be used with limits: {} - {}".format(self.feature, feature_min, feature_max))
 
         self.action_space = spaces.Discrete(int(config_env[NUM_WAYS]))
         # latency, mpki_be # used to be 2*1e6, 5*1e7, ways_be # 14 me 30 gia mpc kai be=mcf
         # for gradient boost high in misses raised to 20 from 14
         self.observation_space = spaces.Box(
-            low=np.array([0, 0]), high=np.array([14, self.action_space.n-1], dtype=np.float32),
+            low=np.array([feature_min, 0]), high=np.array([feature_max, self.action_space.n-1], dtype=np.float32),
             dtype=np.float32)
 
         # # latency, ipc 0.82-0.87, ways_be
@@ -244,16 +256,35 @@ class Rdt(gym.Env):
 
         self.pqos_handler.update()
         time_interval = time.time() - start_time
-        ipc_hp, misses_hp, llc_hp, mbl_hp_ps, mbr_hp_ps = self.pqos_handler.get_hp_metrics(time_interval)
-        ipc_be, misses_be, llc_be, mbl_be_ps, mbr_be_ps = self.pqos_handler.get_be_metrics(time_interval)
+        ipc_hp, misses_hp, llc_hp, mbl_hp_ps, mbr_hp_ps, cycles_hp, instructions_hp = self.pqos_handler.get_hp_metrics(time_interval)
+        ipc_be, misses_be, llc_be, mbl_be_ps, mbr_be_ps, cycles_be, instructions_be = self.pqos_handler.get_be_metrics(time_interval)
 
-        bw_socket_wide = mbl_hp_ps + mbl_be_ps
-        bw_lc = mbl_hp_ps + mbr_hp_ps
-        # misses_be = misses_be / (int(self.action_interval) // 50)
+        # bw_socket_wide = mbl_hp_ps + mbl_be_ps
+        # bw_lc = mbl_hp_ps + mbr_hp_ps
+
+        if self.feature == 'IPC':
+            feature = ipc_be
+        elif self.feature == 'Misses':
+            # misses_be = misses_be / (int(self.action_interval) // 50)
+            feature = misses_be
+        elif self.feature == 'MPKC':
+            misses_be = misses_be / (cycles_be / 1000.)
+            misses_hp = misses_hp / (cycles_be / 1000.)
+            feature = misses_be
+        elif self.feature == 'MPKI':
+            misses_be = misses_be / (instructions_be / 1000.)
+            misses_hp = misses_hp / (instructions_be / 1000.)
+            feature = misses_be
+        elif self.feature == 'Bandwidth':
+            feature = mbl_be_ps
+        else:
+            log.info("No such feature: {}".format(self.feature))
+            return
+
         info = {LC_TAG: (ipc_hp, misses_hp, llc_hp, mbl_hp_ps, mbr_hp_ps, tail_latency, rps),
                 BE_TAG: (ipc_be, misses_be, llc_be, mbl_be_ps, mbr_be_ps, None, None)}
 
-        state = [misses_be, action_be_ways]
+        state = [feature, action_be_ways]
 
         # normalize the state
         state_normalized = [self._normalize(metric, min_val, max_val) for metric, min_val, max_val in
