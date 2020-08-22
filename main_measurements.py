@@ -99,6 +99,9 @@ try:
 
     writer.flush()
 
+    log.info('Percentage of violations: {}'.format(env.violations / env.steps))
+    log.info('Duration of experiment: {}m{}s'.format(minutes, seconds))
+
 finally:
     log.warning('Stopping everything!')
     env.stop_bes()
