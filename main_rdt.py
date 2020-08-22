@@ -39,6 +39,9 @@ if config_env[ACTION_INTERVAL] == "-1":
 if config_env[BE_NAME] == 'multi':
     config_env[BE_NAME] = str([args.be_name])
 
+if config_env[EPS_DECAY] == "-1":
+    config_env[EPS_DECAY] = args.decay
+
 config_env[QUANTILE] = args.quantile
 config_env[FEATURE] = args.feature
 
@@ -191,7 +194,7 @@ try:
 
     log.info("Experiment finished after {}".format(step))
     minutes = int(env.interval_bes)
-    seconds = round((env.interval_bes % 1) * 60, 0)
+    seconds = int(round((env.interval_bes % 1) * 60, 0))
     duration = str(minutes) + 'm' + str(seconds) + 's'
     writer.add_graph(agent.policy_net, torch.tensor(state, device=agent.device))
     writer.add_hparams({'lr': lr, 'gamma': gamma, 'HL Dims': str(layers_dim), 'Target_upd_interval': target_update,
