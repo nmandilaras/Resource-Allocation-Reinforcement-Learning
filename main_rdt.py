@@ -190,6 +190,9 @@ try:
         # writer.add_scalar('Timing/Training', time_interval_2, step)
 
     log.info("Experiment finished after {}".format(step))
+    minutes = int(env.interval_bes)
+    seconds = (env.interval_bes % 1) * 60
+    duration = str(minutes) + 'm' + str(seconds) + 's'
     writer.add_graph(agent.policy_net, torch.tensor(state, device=agent.device))
     writer.add_hparams({'lr': lr, 'gamma': gamma, 'HL Dims': str(layers_dim), 'Target_upd_interval': target_update,
                          'Double': algo, 'Dueling': arch, 'Batch Size': batch_size, 'Mem PER': mem_type,
@@ -197,7 +200,7 @@ try:
                        {'Results/Violations': (env.violations - exploration_viol) / (step - end_exploration_step),
                         'Results/Violations Exploration': exploration_viol / end_exploration_step,
                         'Results/Violations Total': env.violations / step,
-                        'Results/Time': env.interval_bes})
+                        'Results/Time': duration})
 
 finally:
     save_file = os.path.join('checkpoints', time_at_start + comment + '.pkl')

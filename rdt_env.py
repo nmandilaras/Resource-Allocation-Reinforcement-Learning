@@ -364,7 +364,9 @@ class Rdt(gym.Env):
         log.warning('Stopping everything!')
 
         log.info('Percentage of violations: {}'.format(self.violations / self.steps))
-        log.info('Duration of experiment: {}'.format(self.interval_bes))
+        minutes = int(self.interval_bes)
+        seconds = (self.interval_bes % 1) * 60
+        log.info('Duration of experiment: {}m{}s'.format(minutes, seconds))
         # stop and remove the be containers
         self.stop_bes()
 
