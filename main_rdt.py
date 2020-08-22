@@ -39,8 +39,8 @@ if config_env[ACTION_INTERVAL] == "-1":
 if config_env[BE_NAME] == 'multi':
     config_env[BE_NAME] = str([args.be_name])
 
-if config_env[EPS_DECAY] == "-1":
-    config_env[EPS_DECAY] = args.decay
+if config_agent[EPS_DECAY] == "-1":
+    config_agent[EPS_DECAY] = args.decay
 
 config_env[QUANTILE] = args.quantile
 config_env[FEATURE] = args.feature
