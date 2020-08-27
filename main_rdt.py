@@ -152,10 +152,10 @@ try:
         # step += 1
         total_reward += reward
 
-        # probably it won't be used as it doesn't seem effective and we cannot justified it properly
+        # use for online training
         if new_be:
             log.info("New be started at step: {}. Exploration rate increased.".format(step))
-            decaying_schedule = min(decaying_schedule, 0)  # resets exploration rate at 0.2 3210, 4500 for 0.1
+            decaying_schedule = min(decaying_schedule, 0)  # resets exploration rate at 0.2 with 3210, 4500 for 0.1
             log.info("Memory was flushed.")
             memory.flush()
 

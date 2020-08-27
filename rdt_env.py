@@ -269,11 +269,11 @@ class Rdt(gym.Env):
             feature = misses_be
         elif self.feature == 'MPKC':
             misses_be = misses_be / (cycles_be / 1000.)
-            misses_hp = misses_hp / (cycles_be / 1000.)
+            misses_hp = misses_hp / (cycles_hp / 1000.)
             feature = misses_be
         elif self.feature == 'MPKI':
             misses_be = misses_be / (instructions_be / 1000.)
-            misses_hp = misses_hp / (instructions_be / 1000.)
+            misses_hp = misses_hp / (instructions_hp / 1000.)
             feature = misses_be
         elif self.feature == 'Bandwidth':
             feature = mbl_be_ps
