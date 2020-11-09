@@ -1,8 +1,0 @@
-torch==1.5.0+cpu
-torchvision==0.6.0+cpu
-tb-nightly
-gym
-git+https://github.com/intel/intel-cmt-cat.git#egg=pqos&subdirectory=lib/python
-matplotlib
-docker
-# ray[rllib]

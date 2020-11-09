@@ -4,20 +4,21 @@ import numpy as np
 import ast
 from rdt_env import Rdt
 import logging.config
-from utils.argparser import cmd_parser, config_parser
-from nn.policy_fc import PolicyFC
-from nn.dqn_archs import ClassicDQN, Dueling
-from utils.memory import Memory, MemoryPER
-from agents.dqn_agents import DQNAgent, DoubleDQNAgent
+from rlsuite.nn.policy_fc import PolicyFC
+from rlsuite.nn.dqn_archs import ClassicDQN, Dueling
+from rlsuite.utils.memory import Memory, MemoryPER
+from rlsuite.agents.dqn_agents import DQNAgent, DoubleDQNAgent
 from torch.utils.tensorboard import SummaryWriter
 from utils.config_constants import *
 from utils.functions import write_metrics
+from utils.argparser import cmd_parser, config_parser
 from datetime import datetime
 import os
 import time
 
 logging.config.fileConfig('logging.conf')
 log = logging.getLogger('simpleExample')
+
 
 def log_net(net, net_name, step):
     """"""

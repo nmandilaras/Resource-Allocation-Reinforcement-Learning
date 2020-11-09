@@ -18,11 +18,11 @@ import random
 logging.config.fileConfig('logging.conf')  # NOTE path!
 log = logging.getLogger('simpleExample')
 
-file = open("docker_containers", "r")
+file = open("configs/docker_containers", "r")  # TODO get file name as argument
 contents = file.read()
 bes = ast.literal_eval(contents)
 
-features = {
+features_min_max_values = {
     'MPKC': (0, 14),
     'MPKI': (0, 8),
     'Misses': (0, 7*1e7),
@@ -72,7 +72,7 @@ class Rdt(gym.Env):
         self.quantile = config_env[QUANTILE]
         self.feature = config_env[FEATURE]
 
-        feature_min, feature_max = features[self.feature]
+        feature_min, feature_max = features_min_max_values[self.feature]
         log.info("Feature {} will be used with limits: {} - {}".format(self.feature, feature_min, feature_max))
 
         self.action_space = spaces.Discrete(int(config_env[NUM_WAYS]))
