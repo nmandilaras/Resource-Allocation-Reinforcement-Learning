@@ -9,22 +9,16 @@ def parse_num_list(string):
     return list(range(int(start), int(end)+1))
 
 
-def write_metrics(tag, metrics, writer, step):
+def write_metrics(tag, metrics, tensorboard_writer, step):
+    """ Used to write to Tensorboard environment related metrics """
     # ipc, misses, llc, mbl, mbr, latency = metrics
     header = '{}/'.format(tag)
     for metric, metric_name in zip(metrics, metric_names):
         if metric is not None:
-            writer.add_scalar(header + metric_name, metric, step)
-    # if tag == LC_TAG:
-    #     writer.add_scalar(header + 'Latency', latency, step)
-    #
-    # writer.add_scalar(header + 'IPC', ipc, step)
-    # writer.add_scalar(header + 'Misses', misses, step)
-    # writer.add_scalar(header + 'LLC', llc, step)
-    # writer.add_scalar(header + 'MBL', mbl, step)
-    # writer.add_scalar(header + 'MBR', mbr, step)
-    writer.flush()
+            tensorboard_writer.add_scalar(header + metric_name, metric, step)
+    tensorboard_writer.flush()
 
+# TODO remove this commented out code, check with jupyter notebook if similar code is present there
 # use to log latency with this
 # latency_per = np.percentile(latency_list, 99)
 # latency_list_per = [min(i, latency_per) for i in latency_list]
