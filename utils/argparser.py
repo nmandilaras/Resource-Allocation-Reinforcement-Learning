@@ -1,5 +1,4 @@
 import argparse
-import configparser
 
 
 def cmd_parser():
@@ -34,10 +33,3 @@ def cmd_parser():
     # nargs='+' all command-line args present are gathered into a list
 
     return parser
-
-
-def config_parser(filename):
-    config = configparser.ConfigParser()
-    config.read(filename)
-
-    return config['env'], config['agent'], config['misc']

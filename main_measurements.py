@@ -1,6 +1,7 @@
 from rdt_env import Rdt
 import logging.config
-from utils.argparser import cmd_parser, config_parser
+from utils.argparser import cmd_parser
+from rlsuite.utils.functions import config_parser
 from torch.utils.tensorboard import SummaryWriter
 from utils.functions import write_metrics
 from utils.constants import LC_TAG, BE_TAG

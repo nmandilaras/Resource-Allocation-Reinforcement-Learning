@@ -7,11 +7,12 @@ import logging.config
 from rlsuite.nn.policy_fc import PolicyFC
 from rlsuite.nn.dqn_archs import ClassicDQN, Dueling
 from rlsuite.utils.memory import Memory, MemoryPER
+from rlsuite.utils.functions import config_parser
 from rlsuite.agents.dqn_agents import DQNAgent, DoubleDQNAgent
 from torch.utils.tensorboard import SummaryWriter
 from utils.config_constants import *
 from utils.functions import write_metrics
-from utils.argparser import cmd_parser, config_parser
+from utils.argparser import cmd_parser
 from datetime import datetime
 import os
 import time
@@ -21,6 +22,7 @@ log = logging.getLogger('simpleExample')
 
 
 def log_net(net, net_name, step):
+    # TODO this method should be placed in a general file
     """"""
     for name, param in net.named_parameters():
         headline, title = name.rsplit(".", 1)

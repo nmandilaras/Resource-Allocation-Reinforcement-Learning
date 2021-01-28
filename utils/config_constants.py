@@ -18,10 +18,10 @@ EXP_DIST = 'exp_dist'
 PEN_COEF = 'pen_coef'
 BE_NAME = 'be_name'
 BE_REPEATED = 'be_repeated'
-WEIGHTS = 'weights'
 QUANTILE = 'quantile'
 FEATURE = 'feature'
 
+# TODO get most or maybe even all these constants from suite library
 # agent
 LR = 'lr'
 LAYERS_DIM = 'layers_dim'
@@ -36,5 +36,6 @@ EPS_DECAY = 'eps_decay'
 EPS_START = 'eps_start'
 EPS_END = 'eps_end'
 CHECKPOINT = 'checkpoint'
+WEIGHTS = 'weights'
 
 # misc
