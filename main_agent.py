@@ -89,6 +89,7 @@ if checkpoint_path:
     # for var_name in weights:
     #     print(var_name, "\t", weights[var_name].size())
 
+    # TODO create a function for the following functionality
     if init_weights == 'init':
         log.info("Weights of last layers will be reinitialized.")
 
