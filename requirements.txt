@@ -1,5 +1,5 @@
 -f https://download.pytorch.org/whl/torch_stable.html
-git+https://github.com/nikmand/reinforcement-learning-library.git#egg=rlsuite
+git+https://github.com/nikmand/Reinforcement-Learning-Library.git#egg=rlsuite
 git+https://github.com/intel/intel-cmt-cat.git#egg=pqos&subdirectory=lib/python
 torch==1.5.0+cpu
 torchvision==0.6.0+cpu
