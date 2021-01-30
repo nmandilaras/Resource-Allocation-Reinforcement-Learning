@@ -30,6 +30,10 @@ features_min_max_values = {
     'Bandwidth': (0, 3*1e4)
     }
 
+# TODO: environment class may be designed to be agnostic to service loader, in order to work with many services.
+#   Probably a new class Loader is needed that will provide a common interface for every loader.
+#   Moreover a new class scheduler may be useful to handle all the different experiments types concerning the BEs.
+
 
 class Rdt(gym.Env):
     metadata = {'render.modes': ['human']}
