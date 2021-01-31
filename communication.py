@@ -43,15 +43,13 @@ class Loader(ABC):
             s.connect((self.service_ip, self.service_port))
             s.sendall(b'get q95')  # The text can be anything it just unblocks the loader
 
-            # stats = Stats()
             fmt = "dd"
             fmt_size = struct.calcsize(fmt)
-            # log.debug('fmt_size:{}'.format(fmt_size))
             data = s.recv(fmt_size)  # this call will block
             latency, rps = struct.unpack(fmt, data[:fmt_size])
 
         log.debug('Tail latency {}: {}'.format(self.quantile, latency))
-        # log.debug('RPS: {}'.format(rps))
+        log.debug('RPS: {}'.format(rps))
 
         return latency, rps
 
@@ -78,12 +76,6 @@ class MemCachedLoader(Loader):
                                             '-q', self.quantile, self.exponential_dist])
         sleep(10)  # wait in order to bind the socket
 
-# class Stats(ctypes.Structure):
-#     _fields_ = [
-#         ("q95", ctypes.c_double),
-#         ("rps", ctypes.c_double)
-#     ]
-
 
 def get_loader_stats():
     """  """
@@ -91,14 +83,12 @@ def get_loader_stats():
         s.connect((HOST, PORT))
         s.sendall(b'get q95')
 
-        # stats = Stats()
         fmt = "dd"
         fmt_size = struct.calcsize(fmt)
-        # log.debug('fmt_size:{}'.format(fmt_size))
         data = s.recv(fmt_size)        # this call will block
         latency, rps = struct.unpack(fmt, data[:fmt_size])
 
     log.debug('Tail latency q95: {}'.format(latency))
-    # log.debug('RPS: {}'.format(rps))
+    log.debug('RPS: {}'.format(rps))
 
     return latency, rps
