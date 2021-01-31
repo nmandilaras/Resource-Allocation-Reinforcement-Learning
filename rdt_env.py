@@ -48,9 +48,10 @@ class Rdt(gym.Env):
         self.loader_threads = config_env[LOADER_THREADS]
         self.loader_conn = config_env[LOADER_CONN]
         self.action_interval = config_env[ACTION_INTERVAL]
-        self.pqos_interface = config_env[PQOS_INTERFACE]
         self.ratio = config_env[GET_SET_RATIO]
         self.exponential_dist = config_env[EXP_DIST]
+        self.quantile = config_env[QUANTILE]
+        self.pqos_interface = config_env[PQOS_INTERFACE]
         self.num_total_bes = int(config_env[NUM_BES])
         self.container_bes = []
         cores_pid_hp_range = parse_num_list(config_env[CORES_LC])
@@ -73,7 +74,6 @@ class Rdt(gym.Env):
         self.be_quota = self.be_repeated
         self.last_be = None
         self.new_be = False
-        self.quantile = config_env[QUANTILE]
         self.feature = config_env[FEATURE]
 
         feature_min, feature_max = features_min_max_values[self.feature]
