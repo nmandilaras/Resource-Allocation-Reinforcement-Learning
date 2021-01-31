@@ -14,6 +14,7 @@ log = logging.getLogger('simpleExample')
 
 
 class Loader(ABC):
+    """ Abstract class that handles all the functionality that concerns the service loader. """
     def __init__(self, config_loader):
         self.mem_client = None
         self.service_ip = config_loader[HP_IP]
@@ -38,7 +39,8 @@ class Loader(ABC):
             self.mem_client.terminate()
 
     def get_stats(self):
-        """  """
+        """ Collects the stats from the loader. Currently we are receiving the specified quantile
+        and the requests per second. """
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.connect((self.service_ip, self.service_port))
             s.sendall(b'get q95')  # The text can be anything it just unblocks the loader
@@ -55,7 +57,7 @@ class Loader(ABC):
 
 
 class MemCachedLoader(Loader):
-    """  """
+    """ Wrapper class for Memcached loader. """
     def __init__(self, config_loader):
         super().__init__(config_loader)
         self.cores_loader = config_loader[CORES_LOADER]
@@ -65,7 +67,7 @@ class MemCachedLoader(Loader):
         self.exponential_dist = config_loader[EXP_DIST]
 
     def start(self):
-        """  """
+        """ Starts memcached loader with all necessary args. """
 
         loader = '{}/loader'.format(self.loader_dir)
         dataset = '{}/twitter_dataset/twitter_dataset_30x'.format(self.loader_dir)
