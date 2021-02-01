@@ -1,25 +1,35 @@
 # env
 LATENCY_thr = "latency_thr"
+NUM_WAYS = 'num_ways'
+PEN_COEF = 'pen_coef'
+FEATURE = 'feature'
+
+# PQOS
+PQOS_INTERFACE = 'pqos_interface'
 CORES_LC = "cores_lc"
-CORES_BE = 'cores_be'
+
+# loader
+HP_IP = 'hp_ip'
+HP_PORT = 'hp_port'
 CORES_LOADER = 'cores_loader'
 LOADER_DIR = 'loader_dir'
 ACTION_INTERVAL = 'interval'
 LOADER_RPS = 'rps'
 LOADER_THREADS = 'loader_threads'
 LOADER_CONN = 'loader_conn'
-GET_SET_RATIO = 'ratio'
-CORES_PER_BE = 'cores_per_be'
-NUM_BES = 'num_bes'
-NUM_WAYS = 'num_ways'
-PQOS_INTERFACE = 'pqos_interface'
-SEED = 'seed'
+QUANTILE = 'quantile'
 EXP_DIST = 'exp_dist'
-PEN_COEF = 'pen_coef'
+GET_SET_RATIO = 'ratio'
+
+# scheduler
 BE_NAME = 'be_name'
 BE_REPEATED = 'be_repeated'
-QUANTILE = 'quantile'
-FEATURE = 'feature'
+CORES_BE = 'cores_be'
+CORES_PER_BE = 'cores_per_be'
+NUM_BES = 'num_bes'
+DOCKER_FILE = 'configs/docker_containers'
+SEED = 'seed'
+
 
 # TODO get most or maybe even all these constants from suite library
 # agent

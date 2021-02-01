@@ -40,8 +40,9 @@ class Rdt(gym.Env):
 
     def __init__(self, config_env):
         """ """
-        self.latency_thr = int(config_env[LATENCY_thr])
-        self.cores_pids_be = config_env[CORES_BE]
+
+        # concerns loader
+        self.mem_client = None
         self.cores_loader = config_env[CORES_LOADER]
         self.loader_dir = config_env[LOADER_DIR]
         self.rps = int(config_env[LOADER_RPS])
@@ -51,19 +52,20 @@ class Rdt(gym.Env):
         self.ratio = config_env[GET_SET_RATIO]
         self.exponential_dist = config_env[EXP_DIST]
         self.quantile = config_env[QUANTILE]
+
+        # pqos
         self.pqos_interface = config_env[PQOS_INTERFACE]
+        cores_pid_hp_range = parse_num_list(config_env[CORES_LC])
+
+        # scheduler
+        self.cores_per_be = int(config_env[CORES_PER_BE])
+        self.cores_pids_be = config_env[CORES_BE]
+        self.cores_pids_be_range = parse_num_list(self.cores_pids_be)
         self.num_total_bes = int(config_env[NUM_BES])
         self.container_bes = []
-        cores_pid_hp_range = parse_num_list(config_env[CORES_LC])
-        self.cores_pids_be_range = parse_num_list(self.cores_pids_be)
-        self.cores_per_be = int(config_env[CORES_PER_BE])
-        self.violations = 0  # calculate violations
-        self.steps = 1
         self.start_time_bes = None
         self.stop_time_bes = None
         self.interval_bes = None  # in minutes
-        self.seed = int(config_env[SEED])
-        self.penalty_coef = float(config_env[PEN_COEF])
         self.client = docker.from_env()
         self.issued_bes = 0
         self.finished_bes = 0
@@ -74,6 +76,13 @@ class Rdt(gym.Env):
         self.be_quota = self.be_repeated
         self.last_be = None
         self.new_be = False
+
+        # env
+        self.latency_thr = int(config_env[LATENCY_thr])
+        self.violations = 0  # calculate violations
+        self.steps = 1
+        self.seed = int(config_env[SEED])
+        self.penalty_coef = float(config_env[PEN_COEF])
         self.feature = config_env[FEATURE]
 
         feature_min, feature_max = features_min_max_values[self.feature]
@@ -96,7 +105,6 @@ class Rdt(gym.Env):
         #     low=np.array([5, 0.75, 4, 200, 0]), high=np.array([15, 0.9, 5, 1000, self.action_space.n-1], dtype=np.float32),
         #     dtype=np.float32)
 
-        self.mem_client = None
         self.container_be = None
         self.previous_action = -1  # -1 action means all ways available to all groups
 

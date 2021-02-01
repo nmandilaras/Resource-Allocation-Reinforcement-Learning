@@ -5,6 +5,7 @@ import subprocess
 from time import sleep
 import logging.config
 from abc import ABC, abstractmethod
+from utils.config_constants import *
 
 HOST = '127.0.0.1'  # The server's hostname or IP address
 PORT = 42171      # The port used by the server
