@@ -28,13 +28,19 @@ class Scheduler:
         self.client = docker.from_env()
         self.issued_bes = 0
         self.finished_bes = 0
-        self.cores_map = lambda i: ','.join(map(str, self.cores_pids_be_range[i * self.cores_per_be: (i + 1) * self.cores_per_be]))
+        # self.cores_map = lambda i: ','.join(map(str, self.cores_pids_be_range[i * self.cores_per_be: (i + 1) * self.cores_per_be]))
         self.be_repeated = int(config_scheduler[BE_REPEATED])
         self.be_quota = self.be_repeated
         self.last_be = None
         self.new_be = False
         self.docker_file = config_scheduler[DOCKER_FILE]
         self.bes = self.read_avail_dockers()
+
+    def cores_map(self, i):
+        """  """
+        cores_range = self.cores_pids_be_range[i * self.cores_per_be: (i + 1) * self.cores_per_be]
+        cores_range_string = map(str, cores_range)
+        return ','.join(cores_range_string)
 
     def read_avail_dockers(self):
         """ Gets a dictionary with the available BEs and their parameters needed for execution. """
@@ -50,9 +56,9 @@ class Scheduler:
         raise NotImplementedError
 
     def _repeat_be(self):
-        """  """
+        """ Checks if a new be should be selected or the current one can be reintroduced """
         # ΝΟΤΕ do we still need this functionality for our experiments?
-        # If yes it can be implemented as decorator
+        # If yes, it can be implemented as decorator
         if self.be_quota >= self.be_repeated:
             self.new_be = True
             return self._select_be()
@@ -94,12 +100,20 @@ class Scheduler:
         return container_be
 
     def start_bes(self):
-        """ Launches bes """
+        """ Launches bes. """
 
         num_startup_bes = len(self.cores_pids_be_range) // self.cores_per_be
         self.container_bes = [self._start_be(self.cores_map(i)) for i in range(num_startup_bes)]
 
         self.start_time_bes = time.time()
+
+    def restart_bes(self, status):
+        """ Issue new bes on cores that finished execution. """
+
+        for i, status in enumerate(status):
+            if status:
+                self.container_bes[i] = self._start_be(self.cores_map(i))
+                log.info("Finished Bes: {}/{}".format(self.finished_bes, self.num_total_bes))
 
     def poll_bes(self):
         """  """
@@ -113,15 +127,11 @@ class Scheduler:
             else:
                 status.append(False)
 
-        # issue new dockers on cores that finished execution
-        for i, status in enumerate(status):
-            if status:
-                self.container_bes[i] = self._start_be(self.cores_map(i))
-                log.info("Finished Bes: {}/{}".format(self.finished_bes, self.num_total_bes))
+        # self.restart_bes(status)
 
-        done = self.finished_bes >= self.num_total_bes
+        # done = self.finished_bes >= self.num_total_bes
 
-        return done
+        return status
 
     @staticmethod
     def _stop_be(container_be):
@@ -134,9 +144,10 @@ class Scheduler:
             self._stop_be(container_be)
 
     def determine_termination(self):
-        done = self.poll_bes()
-        # log.debug(status)
-        # done = any(status)
+        status = self.poll_bes()
+        self.restart_bes(status)
+        done = self.finished_bes >= self.num_total_bes
+        done = any(status)  # done if any of the bes has finished execution
         if done:
             self.stop_time_bes = time.time()
             self.interval_bes = (self.stop_time_bes - self.start_time_bes) / 60
