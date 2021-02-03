@@ -121,7 +121,7 @@ class Rdt(gym.Env):
 
     def reset_pqos(self):
         self.pqos_handler.reset()
-        self.pqos_handler.setup()
+        self.pqos_handler.setup_groups()
         self.pqos_handler.set_association_class()
         self.pqos_handler.print_association_config()
         self.previous_action = -1
@@ -129,8 +129,7 @@ class Rdt(gym.Env):
     def stop_pqos(self):
         self.pqos_handler.stop()
         self.pqos_handler.reset()
-        if self.pqos_interface != 'none':
-            self.pqos.fini()
+        self.pqos_handler.finish()
 
     def start_client(self):
         """  """
