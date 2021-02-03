@@ -71,7 +71,7 @@ class Rdt(gym.Env):
         self.finished_bes = 0
         self.generator = None
         self.cores_map = lambda i: ','.join(map(str, self.cores_pids_be_range[i * self.cores_per_be: (i + 1) * self.cores_per_be]))
-        self.be_name = ast.literal_eval(config_env[BE_NAME]) if config_env[BE_NAME] else None
+        self.be_name = ast.literal_eval(config_env[BES_LIST]) if config_env[BES_LIST] else None
         self.be_repeated = int(config_env[BE_REPEATED])
         self.be_quota = self.be_repeated
         self.last_be = None

@@ -32,8 +32,8 @@ args = parser.parse_args()
 
 config_env, config_agent, config_misc = config_parser(args.config_file)
 
-if config_env[BE_NAME] == 'multi':
-    config_env[BE_NAME] = str([args.be_name])
+if config_env[BES_LIST] == 'multi':
+    config_env[BES_LIST] = str([args.be_name])
 
 config_env[QUANTILE] = args.quantile
 config_env[FEATURE] = args.feature

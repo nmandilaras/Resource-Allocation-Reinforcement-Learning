@@ -8,7 +8,7 @@ from rlsuite.nn.policy_fc import PolicyFC
 from rlsuite.nn.dqn_archs import ClassicDQN, Dueling
 from rlsuite.utils.memory import Memory, MemoryPER
 from rlsuite.utils.functions import config_parser
-from rlsuite.agents.dqn_agents import DQNAgent, DoubleDQNAgent
+from rlsuite.agents.nn_agents.dqn_agents import DQNAgent, DDQNAgent
 from torch.utils.tensorboard import SummaryWriter
 from utils.config_constants import *
 from utils.functions import write_metrics
@@ -39,8 +39,8 @@ config_env, config_agent, config_misc = config_parser(args.config_file)
 if config_env[ACTION_INTERVAL] == "-1":
     config_env[ACTION_INTERVAL] = args.interval
 
-if config_env[BE_NAME] == 'multi':
-    config_env[BE_NAME] = str([args.be_name])
+if config_env[BES_LIST] == 'multi':
+    config_env[BES_LIST] = str([args.be_name])
 
 if config_agent[EPS_DECAY] == "-1":
     config_agent[EPS_DECAY] = args.decay
@@ -112,7 +112,7 @@ else:
 
 if algo == 'double':
     log.info('Double DQN Agent will be used.')
-    agent = DoubleDQNAgent(num_of_actions, network, criterion, optimizer, gamma, eps_decay, eps_start, eps_end)
+    agent = DDQNAgent(num_of_actions, network, criterion, optimizer, gamma, eps_decay, eps_start, eps_end)
 else:
     agent = DQNAgent(num_of_actions, network, criterion, optimizer, gamma, eps_decay, eps_start, eps_end)
 

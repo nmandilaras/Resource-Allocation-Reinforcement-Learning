@@ -22,7 +22,7 @@ EXP_DIST = 'exp_dist'
 GET_SET_RATIO = 'ratio'
 
 # scheduler
-BE_NAME = 'be_name'
+BES_LIST = 'bes_list'
 BE_REPEATED = 'be_repeated'
 CORES_BE = 'cores_be'
 CORES_PER_BE = 'cores_per_be'

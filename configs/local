@@ -16,7 +16,7 @@ pqos_interface = none
 seed = 1
 exp_dist =
 pen_coef = 2
-be_name = ['graphs', 'in-memory']
+bes_list = ['graphs', 'in-memory']
 be_repeated = 1
 
 [agent]
@@ -32,7 +32,7 @@ mem_type = per
 eps_decay = 0.001
 eps_start = 1
 eps_end = 0.01
-checkpoint = checkpoints/Jul14_18-38-47_.pkl
+checkpoint =
 weights = noinit
 
 [misc]
