@@ -1,7 +1,38 @@
-# In this file we include instructions about the operations needed for this project to run
+### In this file we include instructions about the operations needed during this project.
 
-# to launch tensorboard
+### System operations
+
+# export pqos in server, otherwise it can be set permanently to ~/.bashrc(DONE).
+export LD_LIBRARY_PATH=/home/users/nmandil/intel-cmt-cat/lib/
+
+# information about the cache (size of ways etc) and about the capabilities of pqos
+~/intel-cmt-cat/pqos/pqos -D
+
+# reset COS and associations
+./pqos -R
+
+# check current pqos settings
+./pqos -s
+
+# command to get the hyperthreaded pair of cpu10, the second core number is a hyperthread
+cat /sys/devices/system/cpu/cpu10/topology/thread_siblings_list
+
+### Project operations
+
+# launch the Memcached Server on core 0 with 16GB of memory
+numactl -m 0 -N 0 -C 0 ~/memcached-server/memcached -l 127.0.0.1:11211 -t 1 -m 16384 -n 550 &
+
+# warm up the server by running the loader (as indicated by cloudsuite)
+~/memcached/loader -a ~/memcached/twitter_dataset/twitter_dataset_30x -s ~/memcached/docker_servers.txt -w 4 -S 1 -D 16384 -j -T 1000 -Z
+
+# launch and tasket tensorboard on 2nd socket
+taskset --cpu-list 15 tensorboard --logdir ~/reinforcement-learning/runs &
+
+# launch tensorboard (locally)
 tensorboard --logdir runs
+
+# to see Tensorboard locally ssh with port forwarding from server
+
 
 # to update the dependencies in the conda environment, it installs both conda and pip dependencies
 # in previous versions of conda there was a problem that prevented installing pip dependencies

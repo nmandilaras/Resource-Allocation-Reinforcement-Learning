@@ -9,6 +9,15 @@ from utils.config_constants import *
 import time
 import random
 
+# NOTE This script is complicated because it does actually two things:
+# a) it messes with env: at first starts only the service, it writes all the metrics, then starts the co-execution
+# writes the metrics, and again logs the metrics after the execution has finished.
+# This was used mainly in order to identify the problem with the port attack, otherwise it is not used.
+#
+# b) enforces static allocation and writes the metrics of the execution.
+
+# We can either separate those to functions or maintain just the b) part.
+
 
 def monitor_warm_up():
     global step, start_time

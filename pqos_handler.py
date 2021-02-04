@@ -11,14 +11,23 @@ from abc import ABC, abstractmethod
 logging.config.fileConfig('logging.conf')
 log = logging.getLogger('simpleExample')
 
+# NOTE we define all possible masks for our server which has 20 ways in LLC (L3)
+# Due to pqos limitation on the left side the min value of ways is 2 so HP service will always have at least two ways
+
+L3_NUM_WAYS = 20  # NOTE consider getting this number by CpuInfo
+
+# ways that can be assigned to BEs
 ways = [0x00001, 0x00003, 0x00007, 0x0000f,
         0x0001f, 0x0003f, 0x0007f, 0x000ff,
         0x001ff, 0x003ff, 0x007ff, 0x00fff,
         0x01fff, 0x03fff, 0x07fff, 0x0ffff,
         0x1ffff, 0x3ffff, 0x7ffff, 0xfffff]
-# due to pqos limitation on the left side the min value of ways is 2 so lc will always have at least two ways
 
-base = (1 << 20) - 1  # NOTE consider auto-generate those by CpuInfo
+# ways = [(1 << i) - 1 for i in range(1, L3_NUM_WAYS + 1)]
+
+base = (1 << L3_NUM_WAYS) - 1  #
+
+# base = ways[-1]
 
 
 def bytes_to_kb(num_bytes):
@@ -81,21 +90,22 @@ def get_metrics(group_values, time_interval):
 
 
 def get_metrics_random():
-    """  """
+    """ Mock method that returns same arguments as the func get_metrics """
     ipc = randrange(0, 2)
     misses = randint(1e3, 1e5)
     llc = randint(1e3, 1e5)
     mbl = randint(1e2, 1e3)
     mbr = randint(1e2, 1e3)
+    cycles = randint(1e2, 1e3)
+    instructions = randint(1e2, 1e3)
 
-    return ipc, misses, llc, mbl, mbr
+    return ipc, misses, llc, mbl, mbr, cycles, instructions
 
 
 class PqosHandler(ABC):
     """ Generic class for monitoring """
 
     def __init__(self, socket=0, cos_id_hp=1, cos_id_be=2):
-        self.pqos = Pqos()
         self.mon = PqosMon()
         self.alloc = PqosAlloc()
         self.l3ca = PqosCatL3()
@@ -106,6 +116,23 @@ class PqosHandler(ABC):
         self.cos_id_be = cos_id_be
         self.group_hp, self.group_be = None, None
         self.events = self.get_supported_events()
+
+    @abstractmethod
+    def setup_groups(self): # NOTE this MUST follow reset of monitoring
+        """Sets up monitoring groups. Needs to be implemented by a derived class."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def set_association_class(self):
+        """
+        Sets up allocation classes of service on selected CPUs or PIDs
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def print_association_config(self):
+        """  """
+        raise NotImplementedError
 
     def finish(self):
         self.pqos.fini()
@@ -123,7 +150,7 @@ class PqosHandler(ABC):
         return events
 
     def get_all_cores(self):
-        """ Returns a list of all available cores. Used only if this information is needed. """
+        """ Returns a list of all available cores. Used for informational reasons only. """
 
         cores = []
         sockets = self.cpu_info.get_sockets()
@@ -132,14 +159,6 @@ class PqosHandler(ABC):
             cores += self.cpu_info.get_cores(socket)
 
         return cores
-
-    @abstractmethod
-    def setup_groups(self): # NOTE this MUST follow reset of monitoring
-        """Sets up monitoring groups. Needs to be implemented by a derived class."""
-        raise NotImplementedError
-
-    # def setup(self):
-    #     self.group_hp, self.group_be = self.setup_groups()
 
     def reset(self):
         """ Resets monitoring and configures (starts) monitoring groups. """
@@ -164,13 +183,6 @@ class PqosHandler(ABC):
         self.group_hp.stop()
         self.group_be.stop()
 
-    @abstractmethod
-    def set_association_class(self):
-        """
-        Sets up allocation classes of service on selected CPUs or PIDs
-        """
-        raise NotImplementedError
-
     def set_allocation_class(self, ways_be):
         """
         Sets up allocation classes of service on selected CPU sockets
@@ -178,7 +190,7 @@ class PqosHandler(ABC):
         Parameters:
             ways_be: num of ways to be assigned for bes
         """
-        if ways_be == -1:  # default setting all ways to both groups
+        if ways_be == -1:  # default setting, all ways can be accessed by both groups
             mask_be = ways[-1]
             mask_hp = ways[-1]
         else:
@@ -192,11 +204,6 @@ class PqosHandler(ABC):
         except:
             log.error("Setting up cache allocation class of service failed!")
             raise
-
-    @abstractmethod
-    def print_association_config(self):
-        """  """
-        raise NotImplementedError
 
     def print_allocation_config(self):
         """  """
@@ -238,8 +245,9 @@ class PqosHandlerCore(PqosHandler):
             cores_be: a list of cores assigned to bes
         """
 
-        super(PqosHandlerCore, self).__init__()
+        self.pqos = Pqos()
         self.pqos.init("MSR")
+        super(PqosHandlerCore, self).__init__()
         self.cores_hp = cores_hp
         self.cores_be = cores_be
 
@@ -281,8 +289,9 @@ class PqosHandlerPid(PqosHandler):
             pids_be: a list of PIDs to monitor
         """
 
-        super(PqosHandlerPid, self).__init__()
+        self.pqos = Pqos()
         self.pqos.init("OS")
+        super(PqosHandlerPid, self).__init__()
         self.pid_hp = pid_hp
         self.pids_be = pids_be
 
@@ -313,8 +322,11 @@ class PqosHandlerPid(PqosHandler):
             log.debug("Pid %u => COS%u" % (pid, class_id))
 
 
-class PqosHandlerMock(PqosHandler):
+class PqosHandlerMock:
     """ Mock class for use in environments where pqos cannot be installed. """
+
+    def __int__(self, socket=0, cos_id_hp=1, cos_id_be=2):
+        pass
 
     def setup_groups(self):
         pass

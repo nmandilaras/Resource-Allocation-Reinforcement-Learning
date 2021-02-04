@@ -41,6 +41,7 @@ class Rdt(gym.Env):
     def __init__(self, config_env):
         """ """
 
+        self.loader = None
         # concerns loader
         self.mem_client = None
         self.cores_loader = config_env[CORES_LOADER]
@@ -57,6 +58,7 @@ class Rdt(gym.Env):
         self.pqos_interface = config_env[PQOS_INTERFACE]
         cores_pid_hp_range = parse_num_list(config_env[CORES_LC])
 
+        self.scheduler = None
         # scheduler
         self.cores_per_be = int(config_env[CORES_PER_BE])
         self.cores_pids_be = config_env[CORES_BE]
@@ -65,7 +67,7 @@ class Rdt(gym.Env):
         self.container_bes = []
         self.start_time_bes = None
         self.stop_time_bes = None
-        self.interval_bes = None  # in minutes
+        self.interval_bes = 0  # in minutes
         self.client = docker.from_env()
         self.issued_bes = 0
         self.finished_bes = 0
@@ -112,12 +114,21 @@ class Rdt(gym.Env):
         if self.pqos_interface == 'none':
             self.pqos_handler = PqosHandlerMock()
         else:
-            self.pqos = Pqos()
-            self.pqos.init(self.pqos_interface)
+            # self.pqos = Pqos()
+            # self.pqos.init(self.pqos_interface)
             if self.pqos_interface == 'OS':
                 self.pqos_handler = PqosHandlerPid(cores_pid_hp_range, self.cores_pids_be_range)
             else:
                 self.pqos_handler = PqosHandlerCore(cores_pid_hp_range, self.cores_pids_be_range)
+
+    def set_pqos_handler(self, pqos_handler):
+        self.pqos_handler = pqos_handler
+
+    def set_loader(self, loader):
+        self.loader = loader
+
+    def set_scheduler(self, scheduler):
+        self.scheduler = scheduler
 
     def reset_pqos(self):
         self.pqos_handler.reset()

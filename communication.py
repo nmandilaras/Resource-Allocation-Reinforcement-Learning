@@ -51,8 +51,8 @@ class Loader(ABC):
             data = s.recv(fmt_size)  # this call will block
             latency, rps = struct.unpack(fmt, data[:fmt_size])
 
-        log.debug('Tail latency {}: {}'.format(self.quantile, latency))
-        log.debug('RPS: {}'.format(rps))
+        # log.debug('Tail latency {}: {}'.format(self.quantile, latency))
+        # log.debug('RPS: {}'.format(rps))
 
         return latency, rps
 

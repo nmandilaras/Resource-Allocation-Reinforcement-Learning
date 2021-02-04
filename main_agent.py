@@ -111,7 +111,7 @@ else:
     memory = Memory(mem_size)
 
 if algo == 'double':
-    log.info('Double DQN Agent will be used.')
+    log.info('DDQN Agent will be used.')
     agent = DDQNAgent(num_of_actions, network, criterion, optimizer, gamma, eps_decay, eps_start, eps_end)
 else:
     agent = DQNAgent(num_of_actions, network, criterion, optimizer, gamma, eps_decay, eps_start, eps_end)

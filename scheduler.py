@@ -105,7 +105,10 @@ class Scheduler:
         """ Launches bes. """
 
         num_startup_bes = len(self.cores_pids_be_range) // self.cores_per_be
-        self.container_bes = [self._start_be(self.cores_map(i)) for i in range(num_startup_bes)]
+        # NOTE: each BE launched should be directly placed at the containers list. Otherwise if an error pops up
+        #   during the process the list will haven't been formed yet so the launched bes are not going to be stopped.
+        for i in range(num_startup_bes):
+            self.container_bes.append(self._start_be(self.cores_map(i)))
 
         self.start_time_bes = time.time()
 

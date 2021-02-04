@@ -1,0 +1,38 @@
+[env]
+latency_thr = 10
+cores_lc = 0
+cores_be = 1-9
+cores_loader = 2
+loader_dir = /home/users/nmandil/memcached
+interval = -1
+rps = 100
+loader_threads = 1
+loader_conn = 10
+ratio = 0
+cores_per_be = 4
+num_bes = 1
+num_ways = 9
+pqos_interface = MSR
+seed = 1
+exp_dist =
+pen_coef = 2
+bes_list = ['graphs', 'in-memory']
+be_repeated = 1
+
+[agent]
+lr = 1e-2
+layers_dim = [24, 48]
+target_update = 100
+batch_size = 32
+gamma = 0.99
+arch = dueling
+algo = double
+mem_size = 10_000
+mem_type = per
+eps_decay = 0.001
+eps_start = 1
+eps_end = 0.01
+checkpoint =
+weights = noinit
+
+[misc]
