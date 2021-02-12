@@ -105,7 +105,9 @@ def get_metrics_random():
 class PqosHandler(ABC):
     """ Generic class for monitoring """
 
-    def __init__(self, socket=0, cos_id_hp=1, cos_id_be=2):
+    def __init__(self, interface, socket=0, cos_id_hp=1, cos_id_be=2):
+        self.pqos = Pqos()
+        self.pqos.init(interface)
         self.mon = PqosMon()
         self.alloc = PqosAlloc()
         self.l3ca = PqosCatL3()
@@ -118,7 +120,7 @@ class PqosHandler(ABC):
         self.events = self.get_supported_events()
 
     @abstractmethod
-    def setup_groups(self): # NOTE this MUST follow reset of monitoring
+    def setup_groups(self):  # NOTE this MUST follow reset of monitoring
         """Sets up monitoring groups. Needs to be implemented by a derived class."""
         raise NotImplementedError
 
@@ -245,9 +247,8 @@ class PqosHandlerCore(PqosHandler):
             cores_be: a list of cores assigned to bes
         """
 
-        self.pqos = Pqos()
-        self.pqos.init("MSR")
-        super(PqosHandlerCore, self).__init__()
+        interface = "MSR"
+        super(PqosHandlerCore, self).__init__(interface)
         self.cores_hp = cores_hp
         self.cores_be = cores_be
 
@@ -289,9 +290,8 @@ class PqosHandlerPid(PqosHandler):
             pids_be: a list of PIDs to monitor
         """
 
-        self.pqos = Pqos()
-        self.pqos.init("OS")
-        super(PqosHandlerPid, self).__init__()
+        interface = "OS"
+        super(PqosHandlerPid, self).__init__(interface)
         self.pid_hp = pid_hp
         self.pids_be = pids_be
 

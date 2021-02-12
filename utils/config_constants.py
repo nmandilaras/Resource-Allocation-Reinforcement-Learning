@@ -7,6 +7,7 @@ FEATURE = 'feature'
 # PQOS
 PQOS_INTERFACE = 'pqos_interface'
 CORES_LC = "cores_lc"
+# needs also cores be
 
 # loader
 HP_IP = 'hp_ip'
@@ -22,13 +23,14 @@ EXP_DIST = 'exp_dist'
 GET_SET_RATIO = 'ratio'
 
 # scheduler
-BES_LIST = 'bes_list'
 BE_REPEATED = 'be_repeated'
 CORES_BE = 'cores_be'
 CORES_PER_BE = 'cores_per_be'
 NUM_BES = 'num_bes'
 DOCKER_FILE = 'configs/docker_containers'
+# scheduler subclasses
 SEED = 'seed'
+BES_LIST = 'bes_list'
 
 
 # TODO get most or maybe even all these constants from suite library

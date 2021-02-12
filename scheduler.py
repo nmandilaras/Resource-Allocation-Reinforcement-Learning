@@ -7,7 +7,6 @@ from utils.functions import parse_num_list
 from utils.config_constants import *
 from abc import ABC, abstractmethod
 
-
 logging.config.fileConfig('logging.conf')  # NOTE path!
 log = logging.getLogger('simpleExample')
 
@@ -15,32 +14,34 @@ log = logging.getLogger('simpleExample')
 def read_avail_dockers(docker_file):
     """ Gets a dictionary with the available BEs and their parameters needed for execution. """
 
-    file = open(docker_file, "r")
-    contents = file.read()
-    bes = ast.literal_eval(contents)
+    with open(docker_file, "r") as file:
+        contents = file.read()
+        bes = ast.literal_eval(contents)
 
-    return bes
+        return bes
 
 
-class Scheduler:
+class Scheduler(ABC):
     """ Handles all the operations needed to execute the Best Effort applications.
      Dockers containers are used to handle the execution. """
 
-    def __init__(self, config_scheduler):
-        self.cores_per_be = int(config_scheduler[CORES_PER_BE])
-        self.cores_pids_be_range = parse_num_list(config_scheduler[CORES_BE])
+    def __init__(self, config):
+        self.cores_per_be = int(config[CORES_PER_BE])
+        self.cores_pids_be_range = parse_num_list(config[CORES_BE])
         self.container_bes = []
         self.client = docker.from_env()
 
         self.finished_bes = 0
-        self.bes_available = read_avail_dockers(config_scheduler[DOCKER_FILE])
+        self.bes_available = read_avail_dockers(config[DOCKER_FILE])
 
-        self.issued_bes = 0  # what is it used for ?
-        self.be_repeated = int(config_scheduler[BE_REPEATED])
+        # self.issued_bes = 0  # what is it used for ?
+        self.be_repeated = int(config[BE_REPEATED])
         self.be_quota = self.be_repeated  # there are set equal so that in the first check a new BE will be issued
         self.last_be = None
         self.new_be = False
-        self.num_total_bes = int(config_scheduler[NUM_BES])
+        self.num_total_bes = int(config[NUM_BES])
+        # even in case of QueueScheduler we need that as we may provide additional BEs so that system is full until
+        # the desired number of bes is completed.
 
         self.start_time_bes = None
         self.stop_time_bes = None
@@ -56,10 +57,22 @@ class Scheduler:
     def _select_be(self):
         raise NotImplementedError
 
+    @abstractmethod
+    def reset(self):
+        raise NotImplementedError
+
+    def _restart_scheduling(self):
+        """ Stops currently running BEs and starts new ones. """
+
+        self.stop_bes()
+        self.start_bes()
+        log.debug('BEs started')
+
     def _repeat_be(self):
-        """ Checks if a new be should be selected or the current one can be reintroduced """
-        # ΝΟΤΕ do we still need this functionality for our experiments?
-        # If yes, it can be implemented as decorator
+        """ Checks if a new be should be selected or the current one can be reintroduced. """
+
+        # ΝΟΤΕ do we still need this functionality for our experiments? If yes, it can be implemented as decorator.
+        # Actually the case of a repeated BE can be treated as a special case of QueueScheduler.
         if self.be_quota >= self.be_repeated:
             self.be_quota = 1
             self.new_be = True
@@ -67,24 +80,6 @@ class Scheduler:
         else:
             self.be_quota += 1
             return self.last_be
-
-    # def _select_be(self):
-    #     """  """
-    #     if self.be_quota == self.be_repeated:
-    #         log.info("Quota expired new be will be issued!")
-    #         self.be_quota = 1
-    #         if self.be_name:
-    #             next_be = self.be_name.pop(0)
-    #             if next_be != self.last_be:
-    #                 self.last_be = next_be
-    #                 self.new_be = True
-    #         else:
-    #             self.generator.choice(list(self.bes.keys()))
-    #             self.new_be = True
-    #     else:
-    #         self.be_quota += 1
-    #
-    #     return self.last_be
 
     def _start_be(self, cores):
         """ Start a container on specified cores. """
@@ -97,7 +92,7 @@ class Scheduler:
         container_be = self.client.containers.run(container, command=command, name='be_' + cores.replace(",", "_"),
                                                   cpuset_cpus=cores, volumes_from=[volume] if volume is not None else [],
                                                   detach=True)
-        self.issued_bes += 1
+        # self.issued_bes += 1
 
         return container_be
 
@@ -112,7 +107,7 @@ class Scheduler:
 
         self.start_time_bes = time.time()
 
-    def restart_bes(self, have_finished):
+    def reissue_bes(self, have_finished):
         """ Issue new bes on cores that finished execution, if there are any. """
 
         for i, has_finished in enumerate(have_finished):
@@ -121,8 +116,9 @@ class Scheduler:
                 self.container_bes[i] = self._start_be(self.cores_map(i))
                 log.info("Finished Bes: {}/{}".format(self.finished_bes, self.num_total_bes))
 
-    def poll_bes(self):
+    def _poll_bes(self):
         """ Reloads the status of containers and checks if they have exited. """
+
         have_finished = []
         for container_be in self.container_bes:
             container_be.reload()
@@ -147,14 +143,15 @@ class Scheduler:
 
     def update_status(self):
         """ Polls the status of the containers and determines which of them have finished. If the  """
-        have_finished = self.poll_bes()
+
+        have_finished = self._poll_bes()
         done = self.finished_bes >= self.num_total_bes
         # done = any(have_finished)  # done if any of the bes has finished execution
         if done:
             self.stop_time_bes = time.time()
             self.experiment_duration = (self.stop_time_bes - self.start_time_bes) / 60
         else:
-            self.restart_bes(have_finished)
+            self.reissue_bes(have_finished)
 
         return done
 
@@ -171,20 +168,31 @@ class Scheduler:
 class RandomScheduler(Scheduler):
     """ Initializes a random generator given a specific seed. The choices of the bes are made by the generator. """
 
-    def __init__(self, config_scheduler):
-        super().__init__(config_scheduler)
-        self.generator = random.Random(int(config_scheduler[SEED]))
+    def __init__(self, config):
+        super().__init__(config)
+        self.seed = int(config[SEED])
+        self.generator = random.Random(self.seed)
 
     def _select_be(self):
         return self.generator.choice(list(self.bes_available.keys()))
 
+    def reset(self):
+        self.generator = random.Random(self.seed)
+        self._restart_scheduling()
 
-class ListScheduler(Scheduler):
-    """  """
 
-    def __init__(self, config_scheduler):
-        super().__init__(config_scheduler)
-        self.bes_selected = ast.literal_eval(config_scheduler[BES_LIST])
+class QueueScheduler(Scheduler):
+    """ It takes a list of BEs as input. The choices of the bes are made as in a queue. """
+
+    def __init__(self, config):
+        super().__init__(config)
+        self.bes_list = config[BES_LIST]
+        self.bes_selected = ast.literal_eval(self.bes_list)
 
     def _select_be(self):
+        # TODO what happens if less BEs are provided than the bes needed for the experiment to be completed
         return self.bes_selected.pop(0)
+
+    def reset(self):
+        self.bes_selected = ast.literal_eval(self.bes_list)
+        self._restart_scheduling()
