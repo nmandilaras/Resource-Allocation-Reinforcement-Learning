@@ -2,56 +2,48 @@ import torch
 import torch.optim as optim
 import numpy as np
 import ast
-from rdt_env import Rdt
+from rlsuite.builders.factories import memory_factory
+from env_builder import EnvBuilder
 import logging.config
-from rlsuite.nn.policy_fc import PolicyFC
-from rlsuite.nn.dqn_archs import ClassicDQN, Dueling
-from rlsuite.utils.memory import Memory, MemoryPER
-from rlsuite.utils.functions import config_parser
-from rlsuite.agents.nn_agents.dqn_agents import DQNAgent, DDQNAgent
+from rlsuite.utils.functions import log_parameters_histograms
+from rlsuite.builders.agent_builder import DQNAgentBuilder
 from torch.utils.tensorboard import SummaryWriter
 from utils.config_constants import *
-from utils.functions import write_metrics
+from utils.constants import Loaders, Schedulers
+from utils.functions import write_metrics, form_duration, config_parser
 from utils.argparser import cmd_parser
 from datetime import datetime
 import os
-import time
 
 logging.config.fileConfig('logging.conf')
 log = logging.getLogger('simpleExample')
 
-
-def log_net(net, net_name, step):
-    # TODO this method should be placed in a general file
-    """"""
-    for name, param in net.named_parameters():
-        headline, title = name.rsplit(".", 1)
-        writer.add_histogram(net_name + '/' + headline + '/' + title, param, step)
-    writer.flush()
-
+MEM_START_SIZE = 1000
 
 time_at_start = datetime.now().strftime('%b%d_%H-%M-%S')
 parser = cmd_parser()
 args = parser.parse_args()
 
-config_env, config_agent, config_misc = config_parser(args.config_file)
+config = config_parser(args.config_file)
 
-if config_env[ACTION_INTERVAL] == "-1":
-    config_env[ACTION_INTERVAL] = args.interval
+# some arguments are set from command line args, that was useful for tuning
+if config[LOADER][ACTION_INTERVAL] == "-1":
+    config[LOADER][ACTION_INTERVAL] = args.interval
 
-if config_env[BES_LIST] == 'multi':
-    config_env[BES_LIST] = str([args.be_name])
+if config[AGENT][EPS_DECAY] == "-1":
+    config[AGENT][EPS_DECAY] = args.decay
 
-if config_agent[EPS_DECAY] == "-1":
-    config_agent[EPS_DECAY] = args.decay
+config[LOADER][QUANTILE] = args.quantile
+config[ENV][FEATURE] = args.feature
 
-config_env[QUANTILE] = args.quantile
-config_env[FEATURE] = args.feature
+env = EnvBuilder() \
+    .build_pqos(config[PQOS][PQOS_INTERFACE], config[PQOS][CORES_LC], config[SCHEDULER][CORES_BE]) \
+    .build_loader(Loaders.MEMCACHED, config[LOADER]) \
+    .build_scheduler(Schedulers.QUEUE, config[SCHEDULER]) \
+    .build(config[ENV])
 
 comment = "_{}".format(args.comment)
 writer = SummaryWriter(comment=comment)
-
-env = Rdt(config_env)
 
 num_of_observations = env.observation_space.shape[0]
 num_of_actions = env.action_space.n
@@ -59,64 +51,34 @@ num_of_actions = env.action_space.n
 log.info("Number of available actions: {}".format(num_of_actions))
 log.info("NUmber of input features: {}".format(num_of_observations))
 
-lr = float(config_agent[LR])
-layers_dim = ast.literal_eval(config_agent[LAYERS_DIM])
-target_update = int(config_agent[TARGET_UPDATE])  # target net is updated with the weights of policy net every x updates
-batch_size = int(config_agent[BATCH_SIZE])
-gamma = float(config_agent[GAMMA])
-arch = config_agent[ARCH]  # Classic and Dueling DQN architectures are supported
-algo = config_agent[ALGO]  # DDQN or DQN
-mem_type = config_agent[MEM_PER]
-mem_size = int(config_agent[MEM_SIZE])
-eps_decay = float(config_agent[EPS_DECAY])
-eps_start = float(config_agent[EPS_START])
-eps_end = float(config_agent[EPS_END])
-checkpoint_path = config_agent[CHECKPOINT]
-init_weights = config_agent[WEIGHTS]
-
-if arch == 'dueling':
-    log.info('Dueling architecture will be used.')
-    dqn_arch = Dueling
-else:
-    dqn_arch = ClassicDQN
-
-network = PolicyFC(num_of_observations, layers_dim, num_of_actions, dqn_arch, dropout=0)
-
-if checkpoint_path:
-    log.info("Loading weights from checkpoint.")
-    weights = torch.load(checkpoint_path)
-
-    # for var_name in weights:
-    #     print(var_name, "\t", weights[var_name].size())
-
-    # TODO create a function for the following functionality
-    if init_weights == 'init':
-        log.info("Weights of last layers will be reinitialized.")
-
-        weights["output.value_stream.0.weight"] = torch.rand(1, weights["output.value_stream.0.weight"].size(1), requires_grad=True)
-        weights["output.value_stream.0.bias"] = torch.rand(1, requires_grad=True)
-
-        weights["output.advantage_stream.0.weight"] = torch.rand(num_of_actions, weights["output.advantage_stream.0.weight"].size(1), requires_grad=True)
-        weights["output.advantage_stream.0.bias"] = torch.rand(num_of_actions, requires_grad=True)
-
-    network.load_state_dict(weights)
+# TODO handle this in an elegant way, maybe we good use a dict that maps each field to a function that can be applied
+#   in order to ge the type.
+lr = config[AGENT].getfloat(LR)
+layers_dim = ast.literal_eval(config[AGENT][LAYERS_DIM])
+target_update = config[AGENT].getint(TARGET_UPDATE)
+batch_size = config[AGENT].getint(BATCH_SIZE)
+arch = config[AGENT][ARCH]  # Vanilla or Dueling DQN
+agent_algorithm = config[AGENT][ALGO]  # DDQN or DQN
+mem_type = config[AGENT][MEM_PER]
+mem_size = config[AGENT].getint(MEM_SIZE)
+gamma = config[AGENT].getfloat(GAMMA)
+eps_decay = config[AGENT].getfloat(EPS_DECAY)
+eps_start = config[AGENT].getfloat(EPS_START)
+eps_end = config[AGENT].getfloat(EPS_END)
+checkpoint_path = config[AGENT][CHECKPOINT]
+init_weights = config[AGENT][WEIGHTS]
 
 criterion = torch.nn.MSELoss(reduction='none')  # torch.nn.SmoothL1Loss()  # Huber loss
-optimizer = optim.Adam(network.parameters(), lr)
+optimizer = optim.Adam
 
-if mem_type == 'per':
-    log.info('Prioritized Experience Replay will be used.')
-    memory = MemoryPER(mem_size)
-else:
-    memory = Memory(mem_size)
+memory = memory_factory(mem_type, mem_size)
 
-if algo == 'double':
-    log.info('DDQN Agent will be used.')
-    agent = DDQNAgent(num_of_actions, network, criterion, optimizer, gamma, eps_decay, eps_start, eps_end)
-else:
-    agent = DQNAgent(num_of_actions, network, criterion, optimizer, gamma, eps_decay, eps_start, eps_end)
-
-log.info("Number of parameters in our model: {}".format(sum(x.numel() for x in network.parameters())))
+agent = DQNAgentBuilder(num_of_observations, num_of_actions, gamma, eps_decay, eps_start, eps_end) \
+    .set_criterion(criterion) \
+    .build_network(layers_dim, arch) \
+    .load_checkpoint(checkpoint_path) \
+    .build_optimizer(optimizer, lr) \
+    .build(agent_algorithm)
 
 done = False
 step = 0
@@ -133,17 +95,19 @@ try:
     while not done:
         action = agent.choose_action(state)
         # measuring env step time
-        # start_time = time.time()
-        next_state, reward, done, info, new_be = env.step(action)  # could run in parallel with the rest of the loop but GIL prevents this
-        # end_time = time.time()
-        # time_interval = (end_time - start_time) * 1000
-        # writer.add_scalar('Timing/Env Step', time_interval, step)
+        # start_step_time = time.time()
+        # could run in parallel with the rest of the loop but GIL prevents this
+        next_state, reward, done, info = env.step(action)
+        # end_step_time = time.time()
+        # step_interval = (end_step_time - start_step_time) * 1000
+        # writer.add_scalar('Timing/Env Step', step_interval, step)
         next_state = np.float32(next_state)
         memory.store(state, action, next_state, reward, done)  # Store the transition in memory
         state = next_state
 
         step += 1
-        if mem_type == 'per' and memory.tree.n_entries < 1000:
+
+        if mem_type == 'per' and memory.tree.n_entries < MEM_START_SIZE:
             continue
 
         # measure the violations of the exploration phase separately
@@ -153,67 +117,64 @@ try:
             end_exploration_step = step
             end_exploration_flag = True
 
-        # step += 1
         total_reward += reward
 
-        # use for online training
-        if new_be:
-            log.info("New be started at step: {}. Exploration rate increased.".format(step))
-            decaying_schedule = min(decaying_schedule, 0)  # resets exploration rate at 0.2 with 3210, 4500 for 0.1
-            log.info("Memory was flushed.")
-            memory.flush()
-
-            save_file = os.path.join('checkpoints', time_at_start + comment + '_' + str(step) + '.pkl')
-            torch.save(agent.policy_net.state_dict(), save_file)
+        # experimental path used to create checkpoints: increase exploration when new be is started
+        # if new_be:
+        #     log.info("New be started at step: {}. Exploration rate increased.".format(step))
+        #     decaying_schedule = min(decaying_schedule, 0)  # resets exploration rate at 0.2 with 3210, 4500 for 0.1
+        #     # memory.flush()  # we didn't observe any benefit from emptying the memory
+        #
+        #     save_file = os.path.join('checkpoints', time_at_start + comment + '_' + str(step) + '.pkl')
+        #     agent.save_checkpoint(save_file)
 
         try:
             transitions, indices, is_weights = memory.sample(batch_size)
-        except ValueError:
+        except ValueError:  # not enough samples in memory
             continue
 
         decaying_schedule += 1
 
         loss, errors = agent.update(transitions, is_weights)  # Perform one step of optimization on the policy net
-
         agent.adjust_exploration(decaying_schedule)  # rate is updated at every step
-        memory.batch_update(indices, errors)
-        if step % target_update == 0:  # Update the target network, had crucial impact
+        memory.batch_update(indices, errors)  # only applicable for per
+
+        if step % target_update == 0:  # Update the target network
             agent.update_target_net()
-            log_net(agent.target_net, 'TargetNet', step)
+            # creates enormous amount of data and gives little information so we disable the logging of weights
+            # log_parameters_histograms(writer, agent.target_net, step, 'TargetNet')
 
         for key, value in info.items():
-            write_metrics(key, value, writer, step)
+            write_metrics(writer, key, value, step)
         writer.add_scalar('Agent/Action', action, step)
         writer.add_scalar('Agent/Reward', reward, step)
         writer.add_scalar('Agent/Reward Cumulative', total_reward, step)
         writer.add_scalar('Agent/Epsilon', agent.epsilon, step)
         writer.add_scalar('Agent/Loss', loss, step)
         writer.flush()
-        log_net(agent.policy_net, 'PolicyNet', step)
+        # log_parameters_histograms(writer, agent.policy_net, step, 'PolicyNet')
 
         # measuring training time
-        # end_time_2 = time.time()
-        # time_interval_2 = (end_time_2 - end_time) * 1000
-        # writer.add_scalar('Timing/Training', time_interval_2, step)
+        # end_training = time.time()
+        # training_interval = (end_training - end_step_time) * 1000
+        # writer.add_scalar('Timing/Training', training_interval, step)
 
-    log.info("Experiment finished after {}".format(step))
-    minutes = int(env.interval_bes)
-    seconds = int(round((env.interval_bes % 1) * 60, 0))
-    duration = str(minutes) + 'm' + str(seconds) + 's'
+    log.info("Experiment finished after {} steps.".format(step))
+    duration = env.get_experiment_duration()
     writer.add_graph(agent.policy_net, torch.tensor(state, device=agent.device))
     writer.add_hparams({'lr': lr, 'gamma': gamma, 'HL Dims': str(layers_dim), 'Target_upd_interval': target_update,
-                         'Double': algo, 'Dueling': arch, 'Batch Size': batch_size, 'Mem PER': mem_type,
+                        'Algorithm': agent_algorithm, 'Arch': arch, 'Batch Size': batch_size, 'Mem Type': mem_type,
                         'Mem Size': mem_size},
-                       {'Results/Violations': (env.violations - exploration_viol) / (step - end_exploration_step),
-                        'Results/Violations Exploration': exploration_viol / end_exploration_step,
+                       {'Results/Viol. Post-Expl.': (env.violations - exploration_viol) / (step - end_exploration_step),
+                        'Results/Viol. Exploration': exploration_viol / end_exploration_step,
                         'Results/Violations Total': env.violations / step,
-                        'Results/Time': env.interval_bes})
+                        'Results/Time': duration})
 
-    writer.add_text('duration', duration)
+    writer.add_text('duration', form_duration(duration))
 
 finally:
     save_file = os.path.join('checkpoints', time_at_start + comment + '.pkl')
-    torch.save(agent.policy_net.state_dict(), save_file)
+    agent.save_checkpoint(save_file)
 
     writer.flush()
     writer.close()

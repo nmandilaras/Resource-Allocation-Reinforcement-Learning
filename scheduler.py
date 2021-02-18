@@ -7,7 +7,7 @@ from utils.functions import parse_num_list
 from utils.config_constants import *
 from abc import ABC, abstractmethod
 
-logging.config.fileConfig('logging.conf')  # NOTE path!
+logging.config.fileConfig('logging.conf')
 log = logging.getLogger('simpleExample')
 
 
@@ -26,7 +26,7 @@ class Scheduler(ABC):
      Dockers containers are used to handle the execution. """
 
     def __init__(self, config):
-        self.cores_per_be = int(config[CORES_PER_BE])
+        self.cores_per_be = config.getint(CORES_PER_BE)
         self.cores_pids_be_range = parse_num_list(config[CORES_BE])
         self.container_bes = []
         self.client = docker.from_env()
@@ -35,17 +35,17 @@ class Scheduler(ABC):
         self.bes_available = read_avail_dockers(config[DOCKER_FILE])
 
         # self.issued_bes = 0  # what is it used for ?
-        self.be_repeated = int(config[BE_REPEATED])
+        self.be_repeated = config.getint(BE_REPEATED)
         self.be_quota = self.be_repeated  # there are set equal so that in the first check a new BE will be issued
         self.last_be = None
         self.new_be = False
-        self.num_total_bes = int(config[NUM_BES])
+        self.num_total_bes = config.getint(NUM_BES)
         # even in case of QueueScheduler we need that as we may provide additional BEs so that system is full until
         # the desired number of bes is completed.
 
         self.start_time_bes = None
         self.stop_time_bes = None
-        self.experiment_duration = None  # in minutes
+        self.experiment_duration = 0  # in minutes
 
     def cores_map(self, i):
         """ Returns the cores that corresponds to the ith container. """
@@ -90,8 +90,8 @@ class Scheduler(ABC):
         log.info('Selected Job: {}'.format(be))
         container, command, volume = self.bes_available[be]
         container_be = self.client.containers.run(container, command=command, name='be_' + cores.replace(",", "_"),
-                                                  cpuset_cpus=cores, volumes_from=[volume] if volume is not None else [],
-                                                  detach=True)
+                                                  cpuset_cpus=cores, volumes_from=[volume] if volume is not None
+                                                  else [], detach=True)
         # self.issued_bes += 1
 
         return container_be
@@ -156,13 +156,9 @@ class Scheduler(ABC):
         return done
 
     def get_experiment_duration(self):
-        """ Returns the time needed to for the bes to be completed. """
+        """ Returns the time (in minutes) needed to for the bes to be completed. """
 
-        minutes = self.experiment_duration
-        seconds = int(round((self.experiment_duration % 1) * 60, 0))
-        duration = str(minutes) + 'm' + str(seconds) + 's'
-
-        return duration
+        return self.experiment_duration
 
 
 class RandomScheduler(Scheduler):
@@ -170,7 +166,7 @@ class RandomScheduler(Scheduler):
 
     def __init__(self, config):
         super().__init__(config)
-        self.seed = int(config[SEED])
+        self.seed = config.getint(SEED)
         self.generator = random.Random(self.seed)
 
     def _select_be(self):
@@ -188,9 +184,10 @@ class QueueScheduler(Scheduler):
         super().__init__(config)
         self.bes_list = config[BES_LIST]
         self.bes_selected = ast.literal_eval(self.bes_list)
+        # num of total bes can be less than the provided BEs, but never bigger
+        self.num_total_bes = min(self.num_total_bes, len(self.bes_selected))
 
     def _select_be(self):
-        # TODO what happens if less BEs are provided than the bes needed for the experiment to be completed
         return self.bes_selected.pop(0)
 
     def reset(self):

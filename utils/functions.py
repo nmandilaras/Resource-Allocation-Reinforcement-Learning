@@ -1,5 +1,17 @@
 from utils.constants import metric_names
 import re
+import configparser
+
+
+def config_parser(filename):
+    config = configparser.ConfigParser()
+    try:
+        with open(filename) as f:
+            config.read_file(f)
+    except FileNotFoundError:
+        raise FileNotFoundError("Filename {} does not exists. Exiting...".format(filename))
+
+    return config
 
 
 def parse_num_list(string):
@@ -9,14 +21,22 @@ def parse_num_list(string):
     return list(range(int(start), int(end)+1))
 
 
-def write_metrics(tag, metrics, tensorboard_writer, step):
-    """ Used to write to Tensorboard environment related metrics """
-    # ipc, misses, llc, mbl, mbr, latency = metrics
+def write_metrics(tboard_writer, tag, metrics, step):
+    """ Used to write to Tensorboard environment related metrics. """
     header = '{}/'.format(tag)
     for metric, metric_name in zip(metrics, metric_names):
         if metric is not None:
-            tensorboard_writer.add_scalar(header + metric_name, metric, step)
-    tensorboard_writer.flush()
+            tboard_writer.add_scalar(header + metric_name, metric, step)
+    tboard_writer.flush()
+
+
+def form_duration(duration_minutes):
+    """  """
+    minutes = int(duration_minutes)
+    seconds = int(round((duration_minutes % 1) * 60, 0))
+    duration = str(minutes) + 'm' + str(seconds) + 's'
+
+    return duration
 
 # TODO remove this commented out code, check with jupyter notebook if similar code is present there
 # use to log latency with this

@@ -15,11 +15,11 @@ class Loader(ABC):
     def __init__(self, config):
         self.client = None
         self.service_ip = config[HP_IP]
-        self.service_port = config[HP_PORT]
+        self.service_port = config.getint(HP_PORT)
         self.loader_dir = config[LOADER_DIR]
         self.quantile = config[QUANTILE]
         self.measurement_interval = config[ACTION_INTERVAL]
-        self.rps = int(config[LOADER_RPS])
+        self.rps = config.getint(LOADER_RPS)
         self.cores_loader = config[CORES_LOADER]
 
     @abstractmethod

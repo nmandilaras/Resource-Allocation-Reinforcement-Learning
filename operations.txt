@@ -25,16 +25,21 @@ numactl -m 0 -N 0 -C 0 ~/memcached-server/memcached -l 127.0.0.1:11211 -t 1 -m 1
 # warm up the server by running the loader (as indicated by cloudsuite)
 ~/memcached/loader -a ~/memcached/twitter_dataset/twitter_dataset_30x -s ~/memcached/docker_servers.txt -w 4 -S 1 -D 16384 -j -T 1000 -Z
 
-# launch and tasket tensorboard on 2nd socket
-taskset --cpu-list 15 tensorboard --logdir ~/reinforcement-learning/runs &
-
 # launch tensorboard (locally)
 tensorboard --logdir runs
 
+# launch tensorboard on 2nd server socket
+#taskset --cpu-list 15 tensorboard --logdir ~/path/to/runs &
+
 # to see Tensorboard locally ssh with port forwarding from server
+ssh -L 16006:127.0.0.1:6006 username@broady3.cslab.ece.ntua.gr
 
+# to run the agent
+time taskset --cpu-list 18-19 python main_agent.py args
 
-# to update the dependencies in the conda environment, it installs both conda and pip dependencies
-# in previous versions of conda there was a problem that prevented installing pip dependencies
-conda env update --name rl-test --file rl-test.yml
+# to run the measurements main
+time taskset --cpu-list 18-19 python main_measurements.py args --ways-be $way
+
+# to update rlsuite library
+pip install git+https://github.com/nikmand/Reinforcement-Learning-Library.git#egg=rlsuite -U
 

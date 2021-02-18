@@ -1,3 +1,10 @@
+# sectors
+ENV = "env"
+LOADER = "loader"
+SCHEDULER = "scheduler"
+AGENT = "agent"
+PQOS = "pqos"
+
 # env
 LATENCY_thr = "latency_thr"
 NUM_WAYS = 'num_ways'
@@ -27,7 +34,7 @@ BE_REPEATED = 'be_repeated'
 CORES_BE = 'cores_be'
 CORES_PER_BE = 'cores_per_be'
 NUM_BES = 'num_bes'
-DOCKER_FILE = 'configs/docker_containers'
+DOCKER_FILE = 'docker_file'
 # scheduler subclasses
 SEED = 'seed'
 BES_LIST = 'bes_list'

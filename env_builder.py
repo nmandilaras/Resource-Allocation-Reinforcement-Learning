@@ -3,6 +3,7 @@ from pqos_handler import PqosHandlerMock, PqosHandlerPid, PqosHandlerCore
 from rdt_env import Rdt
 from scheduler import RandomScheduler, QueueScheduler
 from utils.constants import Loaders, Schedulers
+from utils.functions import parse_num_list
 
 
 def loader_factory(service_name, config):
@@ -27,8 +28,10 @@ def scheduler_factory(scheduler_type, config):
     return scheduler
 
 
-def pqos_factory(pqos_interface, cores_pid_hp_range, cores_pids_be_range):
+def pqos_factory(pqos_interface, cores_pid_hp, cores_pids_be):
     """  """
+    cores_pid_hp_range = parse_num_list(cores_pid_hp)
+    cores_pids_be_range = parse_num_list(cores_pids_be)
     if pqos_interface == 'MSR':
         pqos_handler = PqosHandlerCore(cores_pid_hp_range, cores_pids_be_range)
     elif pqos_interface == 'OS':
@@ -52,8 +55,8 @@ class EnvBuilder:
 
         return self
 
-    def build_pqos(self, pqos_interface):
-        # self.pqos_handler = pqos_factory(pqos_interface, ,)
+    def build_pqos(self, pqos_interface, cores_pid_hp_range, cores_pids_be_range):
+        self.pqos_handler = pqos_factory(pqos_interface, cores_pid_hp_range, cores_pids_be_range)
 
         return self
 
@@ -63,6 +66,6 @@ class EnvBuilder:
         return self
 
     def build(self, config):
-        env = Rdt(config, self.pqos_handler, self.scheduler, self.scheduler)
+        env = Rdt(config, self.loader, self.scheduler, self.pqos_handler)
 
         return env

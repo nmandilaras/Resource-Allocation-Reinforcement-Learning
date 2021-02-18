@@ -1,7 +1,15 @@
 [env]
 latency_thr = 10
+num_ways = 18
+pen_coef = 2
+
+[pqos]
 cores_lc = 0
-cores_be = 1-9
+pqos_interface = none
+
+[loader]
+hp_ip = 127.0.0.1
+hp_port = 42171
 cores_loader = 2
 loader_dir = /home/users/nmandil/memcached
 interval = -1
@@ -9,15 +17,17 @@ rps = 100
 loader_threads = 1
 loader_conn = 10
 ratio = 0
-cores_per_be = 4
-num_bes = 1
-num_ways = 9
-pqos_interface = MSR
-seed = 1
 exp_dist =
-pen_coef = 2
-bes_list = ['graphs', 'in-memory']
+
+[scheduler]
+cores_per_be = 3
+num_bes = 1
+cores_be = 1-9
 be_repeated = 1
+docker_file = configs/docker_containers
+# scheduler subclasses
+seed = 1
+bes_list = ['in-memory', 'in-memory', 'in-memory']
 
 [agent]
 lr = 1e-2
@@ -26,7 +36,7 @@ target_update = 100
 batch_size = 32
 gamma = 0.99
 arch = dueling
-algo = double
+algo = ddqn
 mem_size = 10_000
 mem_type = per
 eps_decay = 0.001

@@ -1,5 +1,8 @@
 from enum import Enum
 
+LOGGER = 'simpleExample'
+LOGGER_PATH = 'logging.conf'
+
 LC_TAG = "Latency Critical"
 BE_TAG = "Best Effort"
 

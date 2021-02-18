@@ -259,7 +259,7 @@ class PqosHandlerCore(PqosHandler):
         self.group_be = self.mon.start(self.cores_be, self.events)
 
     def set_association_class(self):
-        """ Sets up allocation classes of service on selected CPUs. """
+        """ Sets up association classes of service on selected CPUs. """
 
         try:
             for core_hp in self.cores_hp:
