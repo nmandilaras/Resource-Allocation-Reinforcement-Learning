@@ -42,7 +42,7 @@ env = EnvBuilder() \
     .build_scheduler(Schedulers.QUEUE, config[SCHEDULER]) \
     .build(config[ENV])
 
-comment = "_{}".format(args.comment)
+comment = f"_{args.comment}"
 writer = SummaryWriter(comment=comment)
 
 num_of_observations = env.observation_space.shape[0]
